@@ -1,0 +1,3069 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelo Paramétrico de Subestação — CONSAG Engenharia</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   PADRÃO VISUAL CONSAG ENGENHARIA (Grupo Andrade Gutierrez)
+   Todas as cores da interface vivem aqui. Trocar a paleta = editar :root.
+   ===================================================================== */
+:root{
+  /* Menus e superfícies escuras */
+  --c-menu:        #06172B;   /* fundo principal de sidebar/menus */
+  --c-superficie:  #283344;   /* superfície secundária / hover */
+  --c-acao:        #3074F6;   /* ação primária, estado ativo, links */
+
+  /* Paleta de gráficos — principal */
+  --g-azul:        #00A1D4;
+  --g-verde:       #009360;
+  --g-amarelo:     #FDB913;
+  --g-vermelho:    #D2232A;
+  --g-cinza:       #CCCCCC;
+  --g-grafite:     #333333;
+
+  /* Paleta de gráficos — secundária */
+  --g-navy:        #094780;
+  --g-laranja:     #E66C37;
+  --g-cinza-med:   #B3B3B3;
+
+  /* Tons de apoio derivados da base escura */
+  --sup-1:  #0b2038;
+  --sup-2:  rgba(40,51,68,.55);
+  --borda:  rgba(179,179,179,.18);
+  --borda-f:rgba(179,179,179,.30);
+  --txt-1:  #EAF0F7;
+  --txt-2:  rgba(234,240,247,.68);
+  --txt-3:  rgba(234,240,247,.42);
+
+  --r: 4px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--c-menu); color:var(--txt-1);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:13px; overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+h1,h2,h3,.kpi-num{font-family:"Inter Tight",Inter,sans-serif}
+button,input,select{font-family:inherit}
+:focus-visible{outline:2px solid var(--c-acao);outline-offset:1px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--c-superficie);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- estrutura ---------- */
+#app{display:flex;height:100%;width:100%}
+#lateral{
+  width:318px;flex:0 0 318px;background:var(--c-menu);
+  border-right:1px solid var(--borda);display:flex;flex-direction:column;min-height:0;
+}
+#palco{flex:1;position:relative;min-width:0;background:#8fb3d8}
+#palco canvas{display:block;touch-action:none}
+
+/* ---------- cabeçalho ---------- */
+.cab{padding:14px 16px 12px;border-bottom:1px solid var(--borda)}
+.marca{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.marca svg{display:block}
+.marca .nome{font-family:"Inter Tight";font-weight:800;font-size:15px;letter-spacing:.02em}
+.marca .nome i{font-style:normal;color:var(--g-azul)}
+.cab h1{font-size:14px;font-weight:600;margin:0;line-height:1.3;letter-spacing:-.005em}
+.cab p{margin:3px 0 0;font-size:11.5px;color:var(--txt-2);line-height:1.4}
+
+/* ---------- abas ---------- */
+.abas{display:flex;border-bottom:1px solid var(--borda);background:var(--sup-1)}
+.abas button{
+  flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--txt-2);
+  padding:9px 2px;font-size:11.5px;font-weight:500;cursor:pointer;
+}
+.abas button[aria-selected="true"]{color:var(--txt-1);border-bottom-color:var(--c-acao)}
+.abas button:hover{background:var(--sup-2)}
+
+/* ---------- painéis ---------- */
+.rolo{overflow-y:auto;flex:1;min-height:0;padding:14px 16px 28px}
+.painel[hidden]{display:none}
+.grupo{margin:0 0 18px}
+.grupo>h2{
+  font-size:11px;font-weight:600;color:var(--txt-3);margin:0 0 9px;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.campo{margin-bottom:12px}
+.campo .rot{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.campo .rot span:first-child{font-size:12px;color:var(--txt-1)}
+.campo .val{font-size:11.5px;color:var(--g-azul);font-variant-numeric:tabular-nums;font-weight:500}
+.campo .nota{font-size:10.5px;color:var(--txt-3);margin-top:3px;line-height:1.4}
+input[type=range]{width:100%;height:18px;margin:0;accent-color:var(--c-acao);background:transparent}
+select{
+  width:100%;background:var(--sup-1);color:var(--txt-1);border:1px solid var(--borda);
+  border-radius:var(--r);padding:7px 8px;font-size:12px;
+}
+.chk{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12px;cursor:pointer}
+.chk input{accent-color:var(--c-acao);width:15px;height:15px;margin:0;flex:0 0 auto}
+.chk .pt{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+.chk .qt{margin-left:auto;font-size:10.5px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+.sub{padding-left:24px}
+.btn{
+  background:var(--sup-1);border:1px solid var(--borda);color:var(--txt-1);
+  padding:8px 10px;border-radius:var(--r);font-size:12px;cursor:pointer;width:100%;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn:hover{border-color:var(--borda-f);background:var(--c-superficie)}
+.btn.primario{background:var(--c-acao);border-color:var(--c-acao);font-weight:500}
+.btn.primario:hover{background:#245fd6}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.linha-btn{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px}
+.seg button{
+  background:var(--sup-1);border:1px solid var(--borda);color:var(--txt-2);
+  padding:8px 6px;border-radius:var(--r);font-size:11.5px;cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--c-acao);border-color:var(--c-acao);color:#fff;font-weight:500}
+
+/* ---------- KPIs e tabela de LM ---------- */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.kpi{background:var(--sup-1);border:1px solid var(--borda);border-radius:var(--r);padding:9px 10px}
+.kpi .kpi-num{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .kpi-rot{font-size:10.5px;color:var(--txt-2);margin-top:2px;line-height:1.3}
+table.lm{width:100%;border-collapse:collapse;font-size:11px}
+table.lm th{
+  text-align:left;color:var(--txt-3);font-weight:600;font-size:10px;letter-spacing:.04em;
+  padding:6px 5px;border-bottom:1px solid var(--borda);position:sticky;top:0;background:var(--c-menu);
+}
+table.lm td{padding:6px 5px;border-bottom:1px solid rgba(179,179,179,.08);vertical-align:top;line-height:1.35}
+table.lm td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.lm tr.grupo-lin td{
+  background:var(--sup-2);font-weight:600;color:var(--txt-1);font-size:10.5px;
+  letter-spacing:.03em;padding-top:9px;padding-bottom:7px;
+}
+table.lm tbody tr:hover td{background:rgba(48,116,246,.10)}
+
+/* ---------- conformidade ---------- */
+.verif{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid rgba(179,179,179,.09);font-size:11.5px}
+.verif .sel{width:8px;height:8px;border-radius:50%;flex:0 0 auto;margin-top:5px}
+.verif b{display:block;font-weight:500;color:var(--txt-1);margin-bottom:2px}
+.verif small{color:var(--txt-2);line-height:1.45;font-size:10.8px;display:block}
+.verif .num{color:var(--txt-1);font-variant-numeric:tabular-nums}
+
+/* ---------- propriedades (direita) ---------- */
+#props{
+  position:absolute;right:12px;top:12px;width:280px;max-height:calc(100% - 24px);
+  background:rgba(6,23,43,.95);border:1px solid var(--borda-f);border-radius:var(--r);
+  backdrop-filter:blur(10px);display:none;flex-direction:column;overflow:hidden;
+}
+#props.aberto{display:flex}
+#props .ph{
+  display:flex;align-items:flex-start;gap:8px;padding:12px 13px;border-bottom:1px solid var(--borda);
+}
+#props .ph h3{margin:0;font-size:13px;font-weight:600;line-height:1.3;flex:1}
+#props .ph .tag{font-size:10.5px;color:var(--g-azul);font-variant-numeric:tabular-nums;margin-top:3px;display:block}
+#props .fechar{background:none;border:0;color:var(--txt-2);cursor:pointer;font-size:17px;line-height:1;padding:0 2px}
+#props .pb{overflow-y:auto;padding:4px 13px 12px}
+.prop{display:grid;grid-template-columns:88px 1fr;gap:9px;padding:6px 0;border-bottom:1px solid rgba(179,179,179,.08);font-size:11.5px}
+.prop dt{color:var(--txt-3);font-size:10.5px;padding-top:1px}
+.prop dd{margin:0;color:var(--txt-1);line-height:1.4;word-break:break-word}
+#props .pf{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 13px;border-top:1px solid var(--borda)}
+#props .pf .btn{padding:6px 4px;font-size:11px}
+
+/* ---------- busca ---------- */
+.busca{position:relative;margin-top:11px}
+.busca input{
+  width:100%;background:var(--sup-1);border:1px solid var(--borda);border-radius:var(--r);
+  color:var(--txt-1);padding:8px 10px;font-size:12px;
+}
+.busca input::placeholder{color:var(--txt-3)}
+#q-res{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:8;max-height:240px;overflow-y:auto;
+  background:#0b2038;border:1px solid var(--borda-f);border-radius:var(--r);
+}
+#q-res button{
+  display:block;width:100%;text-align:left;background:none;border:0;color:var(--txt-1);
+  padding:7px 10px;font-size:11.5px;cursor:pointer;line-height:1.35;
+  border-bottom:1px solid rgba(179,179,179,.08);
+}
+#q-res button:hover{background:var(--c-superficie)}
+#q-res button span{display:block;color:var(--txt-3);font-size:10.3px}
+#q-res .vazio{padding:9px 10px;color:var(--txt-3);font-size:11.5px}
+
+/* ---------- rodapé do palco ---------- */
+.barra{
+  position:absolute;left:12px;right:12px;bottom:12px;display:flex;
+  gap:8px;flex-wrap:wrap;align-items:center;pointer-events:none;
+}
+.barra>*{pointer-events:auto}
+.ferramentas{
+  display:flex;gap:2px;background:rgba(6,23,43,.9);border:1px solid var(--borda);
+  border-radius:var(--r);backdrop-filter:blur(8px);padding:3px;
+}
+.ferramentas button{
+  display:flex;align-items:center;gap:6px;background:none;border:0;border-radius:3px;
+  color:var(--txt-2);padding:7px 11px;font-size:11.5px;cursor:pointer;white-space:nowrap;
+}
+.ferramentas button:hover{background:var(--c-superficie);color:var(--txt-1)}
+.ferramentas button[aria-pressed="true"]{background:var(--c-acao);color:#fff}
+.ferramentas kbd{
+  font-family:"Inter Tight",Inter,sans-serif;font-size:9.5px;border:1px solid var(--borda-f);
+  border-radius:2px;padding:1px 4px;color:var(--txt-3);
+}
+.ferramentas button[aria-pressed="true"] kbd{border-color:rgba(255,255,255,.45);color:#fff}
+.infos{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.migalha{
+  flex-basis:100%;font-size:11px;color:var(--txt-3);padding:2px 2px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.migalha b{color:var(--txt-1);font-weight:500}
+.migalha i{font-style:normal;color:var(--txt-3);padding:0 6px}
+@media (max-width:860px){
+  .ferramentas button span{display:none}
+  .ferramentas kbd{display:none}
+}
+.barra .pill{
+  background:rgba(6,23,43,.88);border:1px solid var(--borda);border-radius:var(--r);
+  padding:6px 9px;font-size:11px;color:var(--txt-2);backdrop-filter:blur(8px);
+}
+.barra .pill b{color:var(--txt-1);font-weight:500;font-variant-numeric:tabular-nums}
+#aviso{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:18px;
+  background:var(--c-acao);color:#fff;padding:9px 14px;border-radius:var(--r);
+  font-size:12px;opacity:0;pointer-events:none;transition:opacity .18s;
+}
+#aviso.on{opacity:1}
+#carregando{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--txt-2);font-size:12.5px;background:#0d2135;z-index:3;
+}
+
+/* ---------- mobile ---------- */
+#abrirMenu{
+  display:none;position:absolute;left:12px;top:12px;z-index:4;width:auto;padding:8px 12px;
+  background:rgba(6,23,43,.92);border:1px solid var(--borda);color:var(--txt-1);
+  border-radius:var(--r);font-size:12px;cursor:pointer;
+}
+@media (max-width:860px){
+  #app{flex-direction:column}
+  #lateral{
+    position:absolute;inset:0 auto 0 0;z-index:6;width:min(90vw,318px);flex:none;
+    transform:translateX(-102%);transition:transform .22s ease;
+    box-shadow:0 0 40px rgba(0,0,0,.5);
+  }
+  #lateral.on{transform:none}
+  #abrirMenu{display:block}
+  #props{width:min(94vw,280px);right:8px;top:56px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ================= SIDEBAR ================= -->
+  <aside id="lateral" aria-label="Painel de controle do modelo">
+    <div class="cab">
+      <div class="marca">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+          <rect x="1" y="1" width="20" height="20" rx="2" fill="#3074F6"/>
+          <path d="M6 15.5 11 5l5 10.5h-2.4L11 9.7l-2.6 5.8z" fill="#fff"/>
+        </svg>
+        <span class="nome">CON<i>SAG</i> Engenharia</span>
+      </div>
+      <h1>Modelo paramétrico de subestação</h1>
+      <p>Arranjo, quantitativos e verificações normativas em tempo real.</p>
+      <div class="busca">
+        <input type="search" id="q" placeholder="Buscar por TAG, equipamento ou sistema…"
+               aria-label="Buscar elemento no modelo" autocomplete="off">
+        <div id="q-res" hidden></div>
+      </div>
+    </div>
+
+    <div class="abas" role="tablist">
+      <button role="tab" id="t-param" aria-selected="true" aria-controls="p-param">Projeto</button>
+      <button role="tab" id="t-vista" aria-selected="false" aria-controls="p-vista">Vistas</button>
+      <button role="tab" id="t-lm" aria-selected="false" aria-controls="p-lm">Materiais</button>
+      <button role="tab" id="t-norma" aria-selected="false" aria-controls="p-norma">Normas</button>
+    </div>
+
+    <div class="rolo">
+      <!-- ---------- ABA PROJETO ---------- -->
+      <section class="painel" id="p-param" role="tabpanel" aria-labelledby="t-param">
+        <div class="grupo">
+          <h2>Configuração elétrica</h2>
+          <div class="campo">
+            <div class="rot"><span>Tensão nominal</span></div>
+            <select id="s-tensao">
+              <option value="69">69 kV — NBR IEC 61936-1</option>
+              <option value="138" selected>138 kV — NBR IEC 61936-1</option>
+              <option value="230">230 kV — NBR IEC 61936-1</option>
+              <option value="345">345 kV — NBR IEC 61936-1</option>
+            </select>
+            <p class="nota" id="n-tensao"></p>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Arranjo de barramento</span></div>
+            <select id="s-arranjo">
+              <option value="simples" selected>Barra simples</option>
+              <option value="seccionada">Barra simples seccionada</option>
+              <option value="transferencia">Barra principal + transferência</option>
+              <option value="dupla">Barra dupla</option>
+            </select>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Bays de linha</span><span class="val" id="v-bays">3</span></div>
+            <input type="range" id="r-bays" min="1" max="5" step="1" value="3">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Transformadores de força</span><span class="val" id="v-trafos">1</span></div>
+            <input type="range" id="r-trafos" min="0" max="3" step="1" value="1">
+          </div>
+        </div>
+
+        <div class="grupo">
+          <h2>Cotas do pátio</h2>
+          <div class="campo">
+            <div class="rot"><span>Distância entre fases</span><span class="val" id="v-fase"></span></div>
+            <input type="range" id="r-fase" min="1.5" max="8" step="0.1" value="3.5">
+            <p class="nota" id="n-fase"></p>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Altura do barramento</span><span class="val" id="v-barra"></span></div>
+            <input type="range" id="r-barra" min="4" max="14" step="0.25" value="7.5">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Altura do pórtico</span><span class="val" id="v-portico"></span></div>
+            <input type="range" id="r-portico" min="8" max="22" step="0.5" value="12">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Altura dos suportes</span><span class="val" id="v-suporte"></span></div>
+            <input type="range" id="r-suporte" min="1.8" max="6" step="0.1" value="2.7">
+            <p class="nota" id="n-suporte"></p>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Espaçamento entre bays</span><span class="val" id="v-passo"></span></div>
+            <input type="range" id="r-passo" min="9" max="24" step="0.5" value="14">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Profundidade do bay</span><span class="val" id="v-prof"></span></div>
+            <input type="range" id="r-prof" min="26" max="60" step="1" value="38">
+          </div>
+        </div>
+
+        <div class="grupo">
+          <h2>Civil</h2>
+          <div class="campo">
+            <div class="rot"><span>Tipo de fundação</span></div>
+            <select id="s-fund">
+              <option value="sapata" selected>Sapata isolada</option>
+              <option value="bloco">Bloco sobre estacas</option>
+              <option value="tubulao">Tubulão a céu aberto</option>
+            </select>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Lado da sapata do pórtico</span><span class="val" id="v-sap"></span></div>
+            <input type="range" id="r-sap" min="1.6" max="4.5" step="0.1" value="2.8">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Altura da sapata</span><span class="val" id="v-sap-h"></span></div>
+            <input type="range" id="r-sap-h" min="0.4" max="1.6" step="0.05" value="0.8">
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Resistência do concreto</span></div>
+            <select id="s-fck">
+              <option value="25">C25 — fck 25 MPa</option>
+              <option value="30" selected>C30 — fck 30 MPa</option>
+              <option value="35">C35 — fck 35 MPa</option>
+              <option value="40">C40 — fck 40 MPa</option>
+            </select>
+            <p class="nota">Taxa de armadura adotada: 85 kgf/m³ (estimativa de projeto básico).</p>
+          </div>
+          <label class="chk"><input type="checkbox" id="c-canaleta" checked><span>Canaletas de cabos</span></label>
+          <label class="chk"><input type="checkbox" id="c-bacia" checked><span>Bacia de contenção de óleo</span></label>
+          <label class="chk"><input type="checkbox" id="c-casa" checked><span>Casa de comando</span></label>
+          <label class="chk"><input type="checkbox" id="c-cerca" checked><span>Cerca patrimonial</span></label>
+        </div>
+
+        <div class="grupo">
+          <h2>Eletromecânica</h2>
+          <label class="chk"><input type="checkbox" id="c-eletroduto" checked><span>Banco de eletrodutos</span></label>
+          <label class="chk"><input type="checkbox" id="c-malha" checked><span>Malha de aterramento</span></label>
+          <label class="chk"><input type="checkbox" id="c-spda" checked><span>Cabo guarda / SPDA</span></label>
+          <label class="chk"><input type="checkbox" id="c-iluminacao" checked><span>Iluminação do pátio</span></label>
+          <label class="chk"><input type="checkbox" id="c-incendio" checked><span>Rede de combate a incêndio</span></label>
+          <label class="chk"><input type="checkbox" id="c-aux" checked><span>Serviços auxiliares</span></label>
+          <label class="chk"><input type="checkbox" id="c-sinal" checked><span>Sinalização e segurança</span></label>
+        </div>
+
+        <div class="grupo">
+          <h2>Equipamentos complementares</h2>
+          <div class="campo">
+            <div class="rot"><span>Bancos de capacitores</span><span class="val" id="v-cap">1</span></div>
+            <input type="range" id="r-cap" min="0" max="3" step="1" value="1">
+            <p class="nota">Banco shunt 13,8 kV em rack, com reator de bloqueio e para-raios.</p>
+          </div>
+          <label class="chk"><input type="checkbox" id="c-reator" checked><span>Reator de linha (shunt)</span></label>
+          <label class="chk"><input type="checkbox" id="c-cubiculos" checked><span>Cubículos de 13,8 kV</span></label>
+          <label class="chk"><input type="checkbox" id="c-sfa" checked><span>Transformador de serviço auxiliar</span></label>
+          <label class="chk"><input type="checkbox" id="c-carrier" checked><span>Bobina de bloqueio (onda portadora)</span></label>
+          <label class="chk"><input type="checkbox" id="c-aterRapido" checked><span>Lâmina de aterramento rápido</span></label>
+          <label class="chk"><input type="checkbox" id="c-torreLT" checked><span>Torre de linha de transmissão</span></label>
+          <label class="chk"><input type="checkbox" id="c-telecom" checked><span>Torre de telecomunicações</span></label>
+          <label class="chk"><input type="checkbox" id="c-cftv" checked><span>CFTV perimetral</span></label>
+          <label class="chk"><input type="checkbox" id="c-guarita" checked><span>Guarita e portão de acesso</span></label>
+          <label class="chk"><input type="checkbox" id="c-reservatorio" checked><span>Reservatório e casa de bombas</span></label>
+          <label class="chk"><input type="checkbox" id="c-separadora" checked><span>Caixa separadora água/óleo</span></label>
+          <div class="campo" style="margin-top:10px">
+            <div class="rot"><span>Malha de terra — módulo</span><span class="val" id="v-malha"></span></div>
+            <input type="range" id="r-malha" min="2" max="8" step="0.5" value="4">
+            <p class="nota">Cabo de cobre nu 50 mm², hastes copperweld 5/8"× 3 m. Ref.: NBR 15751.</p>
+          </div>
+        </div>
+
+        <button class="btn" id="b-reset">Restaurar valores iniciais</button>
+      </section>
+
+      <!-- ---------- ABA VISTAS ---------- -->
+      <section class="painel" id="p-vista" role="tabpanel" aria-labelledby="t-vista" hidden>
+        <div class="grupo">
+          <h2>Modo de representação</h2>
+          <div class="seg" id="seg-modo">
+            <button data-modo="real" aria-pressed="true">Materiais reais</button>
+            <button data-modo="disciplina" aria-pressed="false">Por disciplina</button>
+            <button data-modo="sistema" aria-pressed="false">Por sistema</button>
+            <button data-modo="raiox" aria-pressed="false">Raio‑X</button>
+            <button data-modo="wire" aria-pressed="false">Aramado</button>
+            <button data-modo="mono" aria-pressed="false">Monocromático</button>
+          </div>
+        </div>
+
+        <div class="grupo">
+          <h2>Câmera</h2>
+          <div class="seg" id="seg-cam">
+            <button data-cam="iso">Isométrica</button>
+            <button data-cam="planta">Planta</button>
+            <button data-cam="frente">Elevação frontal</button>
+            <button data-cam="lateral">Elevação lateral</button>
+            <button data-cam="bay">Bay de linha</button>
+            <button data-cam="trafo">Transformador</button>
+          </div>
+          <label class="chk"><input type="checkbox" id="c-perspectiva" checked><span>Projeção em perspectiva</span></label>
+        </div>
+
+        <div class="grupo">
+          <h2>Disciplinas e sistemas</h2>
+          <div id="arvore"></div>
+        </div>
+
+        <div class="grupo">
+          <h2>Corte e explosão</h2>
+          <div class="campo">
+            <div class="rot"><span>Plano de corte</span><span class="val" id="v-corte">desligado</span></div>
+            <input type="range" id="r-corte" min="0" max="100" step="1" value="100">
+            <p class="nota">Corte longitudinal progressivo no eixo do pátio.</p>
+          </div>
+          <div class="campo">
+            <div class="rot"><span>Vista explodida</span><span class="val" id="v-explode">0 %</span></div>
+            <input type="range" id="r-explode" min="0" max="100" step="1" value="0">
+          </div>
+        </div>
+
+        <div class="grupo">
+          <h2>Anotações</h2>
+          <label class="chk"><input type="checkbox" id="c-cotas"><span>Cotas principais</span></label>
+          <label class="chk"><input type="checkbox" id="c-eixos"><span>Eixos de locação</span></label>
+          <label class="chk"><input type="checkbox" id="c-tags"><span>TAGs dos equipamentos</span></label>
+          <label class="chk"><input type="checkbox" id="c-sombra" checked><span>Sombras projetadas</span></label>
+          <label class="chk"><input type="checkbox" id="c-terreno" checked><span>Britamento e terreno</span></label>
+        </div>
+      </section>
+
+      <!-- ---------- ABA MATERIAIS ---------- -->
+      <section class="painel" id="p-lm" role="tabpanel" aria-labelledby="t-lm" hidden>
+        <div class="grupo">
+          <h2>Resumo quantitativo</h2>
+          <div class="kpis" id="kpis"></div>
+        </div>
+        <div class="grupo">
+          <h2>Escopo da lista</h2>
+          <div class="seg" id="seg-lm">
+            <button data-lm="TODOS" aria-pressed="true">Consolidada</button>
+            <button data-lm="CIVIL" aria-pressed="false">Civil</button>
+            <button data-lm="ELETROMECANICA" aria-pressed="false">Eletromecânica</button>
+            <button data-lm="SELECAO" aria-pressed="false">Seleção atual</button>
+          </div>
+          <div class="linha-btn">
+            <button class="btn" id="b-csv">Exportar CSV</button>
+            <button class="btn" id="b-json">Exportar JSON</button>
+          </div>
+          <button class="btn primario" id="b-copiar">Copiar tabela</button>
+          <p class="nota" style="margin-top:8px">CSV com separador ponto e vírgula e decimal vírgula, pronto para Excel em português.</p>
+        </div>
+        <div class="grupo">
+          <h2>Lista de materiais</h2>
+          <div style="overflow-x:auto">
+            <table class="lm" id="tab-lm">
+              <thead><tr><th>Item</th><th>Descrição</th><th class="n">Qtd.</th><th>Un.</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- ABA NORMAS ---------- -->
+      <section class="painel" id="p-norma" role="tabpanel" aria-labelledby="t-norma" hidden>
+        <div class="grupo">
+          <h2>Verificação de conformidade</h2>
+          <div id="verificacoes"></div>
+        </div>
+        <div class="grupo">
+          <h2>Referências adotadas</h2>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR IEC 61936-1</b><small>Instalações elétricas acima de 1 kV — distâncias elétricas mínimas, alturas de partes energizadas e zonas de proteção.</small></div></div>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR 14039 / NBR 5410</b><small>Instalações de média tensão e instalações de baixa tensão nos serviços auxiliares.</small></div></div>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR 15751</b><small>Sistemas de aterramento de subestações — dimensionamento de malha, hastes e conexões.</small></div></div>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR 5419</b><small>Proteção contra descargas atmosféricas — cabo guarda e método da esfera rolante.</small></div></div>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR 6118 / NBR 6122</b><small>Estruturas de concreto e fundações — sapatas, blocos e tubulões do pátio.</small></div></div>
+          <div class="verif"><span class="sel" style="background:var(--g-azul)"></span><div>
+            <b>ABNT NBR 8800 / NR‑10</b><small>Estruturas metálicas dos pórticos e segurança em instalações elétricas.</small></div></div>
+          <p class="nota" style="margin-top:12px">
+            Os valores exibidos são de referência para estudo de arranjo e conferência de ordem de grandeza.
+            O projeto executivo deve consultar a edição vigente de cada norma e os critérios da concessionária.
+          </p>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ================= PALCO 3D ================= -->
+  <main id="palco">
+    <button id="abrirMenu" aria-expanded="false">Painel</button>
+    <div id="carregando">Montando o modelo…</div>
+
+    <section id="props" aria-live="polite">
+      <div class="ph">
+        <div style="flex:1">
+          <h3 id="pr-nome">—</h3>
+          <span class="tag" id="pr-tag"></span>
+        </div>
+        <button class="fechar" id="pr-fechar" aria-label="Fechar propriedades">×</button>
+      </div>
+      <div class="pb"><dl id="pr-corpo" style="margin:0"></dl></div>
+      <div class="pf">
+        <button class="btn" id="pr-focar">Focar</button>
+        <button class="btn" id="pr-isolar">Isolar</button>
+        <button class="btn" id="pr-ocultar">Ocultar</button>
+        <button class="btn" id="pr-restaurar">Restaurar</button>
+      </div>
+    </section>
+
+    <div class="barra">
+      <div class="ferramentas">
+        <button data-acao="focar">Focar<kbd>F</kbd></button>
+        <button data-acao="isolar">Isolar<kbd>I</kbd></button>
+        <button data-acao="esmaecer" aria-pressed="true">Esmaecer os demais<kbd>D</kbd></button>
+        <button data-acao="ocultar">Ocultar<kbd>H</kbd></button>
+        <button data-acao="restaurar">Restaurar<kbd>R</kbd></button>
+      </div>
+      <div class="infos">
+        <span class="pill" id="p-elem">Elementos: <b>—</b></span>
+        <span class="pill" id="p-sel">Nenhuma seleção</span>
+        <button class="btn pill" id="b-tudo" style="width:auto;padding:6px 10px">Mostrar tudo</button>
+      </div>
+      <div class="migalha" id="migalha"></div>
+    </div>
+    <div id="aviso" role="status"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   1. PARÂMETROS DE PROJETO
+   ===================================================================== */
+
+// Distâncias elétricas de referência por tensão (ABNT NBR IEC 61936-1).
+// dFT: fase-terra (m) · dFF: fase-fase (m) · NBI: nível básico de isolamento (kV)
+var TENSOES = {
+  "69":  {NBI:350,  dFT:0.63, dFF:0.75, altIso:0.9,  corrente:1250},
+  "138": {NBI:650,  dFT:1.10, dFF:1.30, altIso:1.5,  corrente:2000},
+  "230": {NBI:1050, dFT:1.90, dFF:2.20, altIso:2.2,  corrente:2500},
+  "345": {NBI:1425, dFT:2.60, dFF:3.00, altIso:3.0,  corrente:3000}
+};
+
+var PADRAO = {
+  tensao:"138", arranjo:"simples", bays:3, trafos:1,
+  vaoFase:3.5, hBarra:7.5, hPortico:12, hSuporte:2.7, passoBay:14, profBay:38,
+  fund:"sapata", ladoSap:2.8, hSap:0.8, fck:"30", moduloMalha:4,
+  canaleta:true, bacia:true, casa:true, cerca:true,
+  eletroduto:true, malha:true, spda:true, iluminacao:true, incendio:true, aux:true, sinal:true,
+  capacitores:1, reator:true, cubiculos:true, sfa:true, carrier:true, aterRapido:true,
+  torreLT:true, telecom:true, cftv:true, guarita:true, reservatorio:true, separadora:true,
+  cotas:false, eixos:false, tags:false, sombra:true, terreno:true
+};
+var P = Object.assign({}, PADRAO);
+var modo = "real", corte = 100, explode = 0;
+
+/* =====================================================================
+   2. CENA, ILUMINAÇÃO E AMBIENTE
+   ===================================================================== */
+var palco = document.getElementById("palco");
+var cena = new THREE.Scene();
+// Névoa atmosférica na cor do horizonte — dá profundidade e funde a serra ao céu.
+cena.fog = new THREE.Fog(0xbcc9d6, 210, 980);
+
+var rend = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
+rend.shadowMap.enabled = true;
+rend.shadowMap.type = THREE.PCFSoftShadowMap;
+rend.localClippingEnabled = true;
+rend.outputEncoding = THREE.sRGBEncoding;
+rend.toneMapping = THREE.ACESFilmicToneMapping;
+rend.toneMappingExposure = 1.05;
+palco.appendChild(rend.domElement);
+
+var camP = new THREE.PerspectiveCamera(40, 1, 0.2, 1200);
+var camO = new THREE.OrthographicCamera(-50, 50, 50, -50, -2000, 3000);
+var cam = camP;
+
+// Environment map a partir do céu — é o que dá reflexo correto aos metais
+// (sem ele, metalness alto renderiza quase preto).
+var DIR_SOL = new THREE.Vector3(0.52, 0.62, 0.58).normalize();
+(function ambiente(){
+  var c = document.createElement("canvas"); c.width = 16; c.height = 256;
+  var x = c.getContext("2d"), g = x.createLinearGradient(0,0,0,256);
+  g.addColorStop(0.00,"#2f6bb5");  // zênite
+  g.addColorStop(0.32,"#6ba3dd");
+  g.addColorStop(0.47,"#b9d2e8");  // banda de horizonte
+  g.addColorStop(0.50,"#c8cfd0");
+  g.addColorStop(0.62,"#8e8168");  // solo iluminado
+  g.addColorStop(1.00,"#4a4133");
+  x.fillStyle = g; x.fillRect(0,0,16,256);
+  var tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.encoding = THREE.sRGBEncoding;
+  var rt = new THREE.WebGLCubeRenderTarget(256).fromEquirectangularTexture(rend, tex);
+  cena.environment = rt.texture;
+})();
+
+// Luz do céu (azulada no topo, quente refletida do solo)
+cena.add(new THREE.HemisphereLight(0xa9c9ec, 0x6d5f45, 0.75));
+// Sol direto, levemente quente, como em céu limpo de meio da manhã
+var sol = new THREE.DirectionalLight(0xffeccd, 2.25);
+sol.position.copy(DIR_SOL).multiplyScalar(140);
+sol.castShadow = true;
+sol.shadow.mapSize.set(2048,2048);
+sol.shadow.bias = -0.0006; sol.shadow.normalBias = 0.035; sol.shadow.radius = 2.4;
+var sc = sol.shadow.camera;
+sc.left=-110; sc.right=110; sc.top=110; sc.bottom=-110; sc.near=1; sc.far=400;
+cena.add(sol);
+// Rebote do solo, para as faces em sombra não ficarem chapadas
+var rebote = new THREE.DirectionalLight(0xc0a882, 0.32);
+rebote.position.set(-70, 22, -80); cena.add(rebote);
+
+/* =====================================================================
+   3. MATERIAIS — cores fiéis aos materiais reais de uma SE
+   ===================================================================== */
+function mat(cor, rug, met, extra){
+  return new THREE.MeshStandardMaterial(Object.assign(
+    {color:cor, roughness:rug, metalness:met===undefined?0:met}, extra||{}));
+}
+
+// Textura procedural granulada: quebra o aspecto "plástico" das superfícies
+// grandes (concreto, brita, terreno) sem custo de arquivos externos.
+function texturaGrao(base, manchas, densidade, rep){
+  var n = 256, c = document.createElement("canvas"); c.width = c.height = n;
+  var x = c.getContext("2d");
+  x.fillStyle = base; x.fillRect(0,0,n,n);
+  for(var i=0;i<densidade;i++){
+    var r = 0.6 + Math.random()*3.2;
+    var t = manchas[(Math.random()*manchas.length)|0];
+    x.fillStyle = t; x.globalAlpha = 0.12 + Math.random()*0.5;
+    x.beginPath(); x.arc(Math.random()*n, Math.random()*n, r, 0, 6.2832); x.fill();
+  }
+  x.globalAlpha = 1;
+  var tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(rep||6, rep||6);
+  tex.encoding = THREE.sRGBEncoding;
+  tex.anisotropy = 4;
+  return tex;
+}
+// Riscado vertical sutil, para chapas e tanques metálicos
+function texturaEscovado(base, risco){
+  var n = 128, c = document.createElement("canvas"); c.width = c.height = n;
+  var x = c.getContext("2d"); x.fillStyle = base; x.fillRect(0,0,n,n);
+  for(var i=0;i<220;i++){
+    x.strokeStyle = risco; x.globalAlpha = 0.04 + Math.random()*0.10;
+    x.beginPath(); x.moveTo(Math.random()*n, 0); x.lineTo(Math.random()*n, n); x.stroke();
+  }
+  x.globalAlpha = 1;
+  var t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2,2);
+  t.encoding = THREE.sRGBEncoding;
+  return t;
+}
+
+/* Cores calibradas por observação de pátios reais: concreto envelhecido puxa
+   para o bege-cinza, galvanização a fogo oxida para um cinza fosco azulado,
+   porcelana de AT é marrom-chocolate, tanques seguem o cinza ANSI 70. */
+var MT = {
+  concreto:   mat(0x938e84, 0.94, 0.03, {map:texturaGrao("#938e84",["#7e796f","#a8a399","#6f6a61"],900,4)}),
+  concretoEsc:mat(0x7d786f, 0.96, 0.03, {map:texturaGrao("#7d786f",["#6a655c","#8d887f"],700,3)}),
+  magro:      mat(0x6b675f, 1.00, 0.00),
+  galvan:     mat(0x9aa1a8, 0.52, 0.74),   // aço galvanizado a fogo, já fosco
+  galvanEsc:  mat(0x7e858c, 0.58, 0.70),
+  acoPint:    mat(0x5f676d, 0.66, 0.35),   // aço pintado cinza ANSI
+  aluminio:   mat(0xb6bdc3, 0.34, 0.86, {map:texturaEscovado("#b6bdc3","#8d959b")}),
+  cobre:      mat(0xa7612c, 0.42, 0.82),   // condutores e conectores de cobre
+  cobreNu:    mat(0x8c5326, 0.58, 0.66),   // cobre nu oxidado da malha
+  acsr:       mat(0x74797e, 0.62, 0.62),   // cabo CAA / cabo guarda
+  porcelana:  mat(0x5c3f2b, 0.34, 0.02),   // porcelana marrom vitrificada
+  polimero:   mat(0x7e8385, 0.62, 0.03),   // isolador polimérico cinza
+  tanque:     mat(0x79817f, 0.62, 0.28, {map:texturaEscovado("#79817f","#666e6c")}),
+  radiador:   mat(0x6f7776, 0.66, 0.32),
+  brita:      mat(0x6f6a60, 1.00, 0.00, {map:texturaGrao("#6f6a60",["#514d45","#8a8479","#46423b"],2600,26)}),
+  terra:      mat(0x6c6250, 1.00, 0.00, {map:texturaGrao("#6c6250",["#5a5142","#7d7361"],1400,14)}),
+  pvc:        mat(0x384349, 0.78, 0.05),   // eletroduto PVC
+  eletroduto: mat(0x878f95, 0.52, 0.70),   // eletroduto de aço galvanizado
+  telha:      mat(0x9aa0a3, 0.72, 0.28),
+  parede:     mat(0xbdb8ae, 0.92, 0.02, {map:texturaGrao("#bdb8ae",["#a9a49a","#c9c5bc"],500,3)}),
+  cerca:      mat(0x858c92, 0.64, 0.55),
+  vidro:      mat(0x24343f, 0.12, 0.45),
+  lamp:       new THREE.MeshStandardMaterial({color:0xfff3cf, emissive:0xffe9b0, emissiveIntensity:.5, roughness:.4}),
+
+  /* Cores funcionais de pátio — cada uma tem significado em campo */
+  seguranca:  mat(0xE0A21A, 0.58, 0.18),   // amarelo de guarda-corpos e demarcação
+  advertencia:mat(0xD2232A, 0.52, 0.15),   // vermelho da rede de incêndio
+  hidrante:   mat(0xB02026, 0.48, 0.30),
+  laranja:    mat(0xE66C37, 0.60, 0.15),   // portas corta-fogo e equipamentos móveis
+  azulPainel: mat(0x2E5E8E, 0.58, 0.22),   // painéis e cabines de serviços auxiliares
+  telhaAzul:  mat(0x37618C, 0.62, 0.30),   // telha metálica pintada
+  creme:      mat(0xC9BFA6, 0.90, 0.02),   // alvenaria pintada
+  verde:      mat(0x2F7D53, 0.60, 0.15),   // caixas de bateria e sinalização de rota
+  preto:      mat(0x24272B, 0.70, 0.10),   // faixa zebrada e bases pintadas
+  placa:      mat(0xF0C63A, 0.50, 0.10)    // placas de identificação e advertência
+};
+Object.keys(MT).forEach(function(k){ MT[k].userData.base = MT[k].color.getHex(); });
+
+/* =====================================================================
+   3b. ENTORNO — céu, relevo, serra e vegetação
+   Fica em um grupo próprio, fora de "raiz": não entra na seleção, nem na
+   árvore de disciplinas, nem na lista de materiais.
+   ===================================================================== */
+var cenario = new THREE.Group(); cena.add(cenario);
+
+function ruido(x, z){   // ruído suave por soma de senos — relevo sem bibliotecas
+  return Math.sin(x*0.013)*Math.cos(z*0.011)*1.0
+       + Math.sin(x*0.041+1.7)*Math.cos(z*0.037-0.4)*0.42
+       + Math.sin(x*0.09-0.8)*Math.cos(z*0.083+2.1)*0.16;
+}
+
+function criarCeu(){
+  var geo = new THREE.SphereGeometry(900, 32, 20);
+  var mSky = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: {
+      topo:      {value: new THREE.Color(0x2b62ad)},
+      meio:      {value: new THREE.Color(0x7fadde)},
+      horizonte: {value: new THREE.Color(0xc6d6e4)},
+      solo:      {value: new THREE.Color(0x9c8f76)},
+      dirSol:    {value: DIR_SOL.clone()}
+    },
+    vertexShader:
+      "varying vec3 vDir;\n" +
+      "void main(){ vDir = normalize(position);" +
+      "gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+    fragmentShader:
+      "uniform vec3 topo, meio, horizonte, solo, dirSol;\n" +
+      "varying vec3 vDir;\n" +
+      "void main(){\n" +
+      "  float h = vDir.y;\n" +
+      "  vec3 cor;\n" +
+      "  if(h >= 0.0){\n" +
+      "    float t = pow(clamp(h,0.0,1.0), 0.62);\n" +
+      "    cor = mix(horizonte, mix(meio, topo, smoothstep(0.25,1.0,t)), smoothstep(0.0,0.42,t));\n" +
+      "    float d = max(dot(normalize(vDir), normalize(dirSol)), 0.0);\n" +
+      "    cor += vec3(1.0,0.93,0.78) * pow(d, 340.0) * 1.9;\n" +   // disco solar
+      "    cor += vec3(1.0,0.95,0.86) * pow(d, 7.0) * 0.16;\n" +    // halo difuso
+      "  } else {\n" +
+      "    cor = mix(horizonte, solo, smoothstep(0.0, 0.22, -h));\n" +
+      "  }\n" +
+      "  gl_FragColor = vec4(cor, 1.0);\n" +
+      "}"
+  });
+  var ceu = new THREE.Mesh(geo, mSky);
+  ceu.renderOrder = -1000; ceu.frustumCulled = false;
+  cenario.add(ceu);
+
+  // Nuvens altas: planos com textura procedural, bem sutis
+  var n = 256, c = document.createElement("canvas"); c.width = c.height = n;
+  var x = c.getContext("2d");
+  x.clearRect(0,0,n,n);
+  for(var i=0;i<130;i++){
+    var cx = n*0.5 + (Math.random()-0.5)*n*0.72;
+    var cy = n*0.5 + (Math.random()-0.5)*n*0.42;
+    var r = 10 + Math.random()*44;
+    var g2 = x.createRadialGradient(cx,cy,0,cx,cy,r);
+    g2.addColorStop(0,"rgba(255,255,255,.5)"); g2.addColorStop(1,"rgba(255,255,255,0)");
+    x.fillStyle = g2; x.beginPath(); x.arc(cx,cy,r,0,6.2832); x.fill();
+  }
+  var texN = new THREE.CanvasTexture(c);
+  for(var k=0;k<7;k++){
+    var pl = new THREE.Mesh(new THREE.PlaneGeometry(320+Math.random()*260, 120+Math.random()*90),
+      new THREE.MeshBasicMaterial({map:texN, transparent:true, opacity:0.5,
+        depthWrite:false, fog:false}));
+    pl.rotation.x = -Math.PI/2;
+    var ang = Math.random()*6.2832, dist = 240 + Math.random()*420;
+    pl.position.set(Math.cos(ang)*dist, 230 + Math.random()*90, Math.sin(ang)*dist);
+    pl.rotation.z = Math.random()*3.14;
+    pl.renderOrder = -900; cenario.add(pl);
+  }
+}
+
+function criarTerreno(){
+  // Terreno amplo com ondulação suave; o platô da SE é aplanado no centro.
+  var lado = 1600, div = 150;
+  var geo = new THREE.PlaneGeometry(lado, lado, div, div);
+  var pos = geo.attributes.position;
+  for(var i=0;i<pos.count;i++){
+    var X = pos.getX(i), Z = pos.getY(i);
+    var d = Math.max(Math.abs(X), Math.abs(Z));
+    var patamar = THREE.MathUtils.smoothstep(d, 95, 230);   // 0 no platô, 1 longe
+    var alt = ruido(X,Z)*3.4 + ruido(X*2.1+90, Z*2.1-40)*1.1;
+    pos.setZ(i, alt*patamar - 0.9);
+  }
+  geo.computeVertexNormals();
+  var texSolo = texturaGrao("#7d7259", ["#6a5f49","#8e8467","#5d543f","#9a9070"], 4200, 60);
+  var solo = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+    color:0x8d8268, roughness:1.0, metalness:0.0, map:texSolo}));
+  solo.rotation.x = -Math.PI/2; solo.position.y = -0.95;
+  solo.receiveShadow = true;
+  cenario.add(solo);
+
+  // Estrada de acesso em terra batida
+  var estrada = new THREE.Mesh(new THREE.PlaneGeometry(9, 620, 1, 40),
+    new THREE.MeshStandardMaterial({color:0x8a7c62, roughness:1,
+      map:texturaGrao("#8a7c62",["#776a52","#9b8e74"],1800,16)}));
+  estrada.rotation.x = -Math.PI/2; estrada.rotation.z = 0.10;
+  estrada.position.set(-58, -0.78, -300);
+  estrada.receiveShadow = true; cenario.add(estrada);
+}
+
+criarCeu(); criarTerreno();
+
+// Cores por disciplina e por sistema (paleta CONSAG de gráficos)
+var COR_DISC = {CIVIL:0x00A1D4, ELETROMECANICA:0xFDB913};
+var COR_SIST = {
+  "Fundação":0x094780, "Concreto":0x00A1D4, "Estrutura metálica":0x3074F6,
+  "Pavimentação":0xB3B3B3, "Edificação":0xCCCCCC, "Drenagem":0x009360,
+  "Equipamento de pátio":0xFDB913, "Barramento e conexões":0xE66C37,
+  "Eletrodutos":0xD2232A, "Aterramento":0x009360, "SPDA":0x00A1D4,
+  "Estrutura suporte":0x3074F6, "Iluminação":0xFDB913, "Cerca e acessos":0xB3B3B3,
+  "Combate a incêndio":0xD2232A, "Sinalização e segurança":0xFDB913,
+  "Serviços auxiliares":0x094780, "Compensação reativa":0xE66C37,
+  "Média tensão":0x00A1D4, "Telecomunicações":0x094780,
+  "Segurança eletrônica":0xB3B3B3, "Linha de transmissão":0x3074F6
+};
+
+/* =====================================================================
+   4. REGISTRO DE ELEMENTOS (base de dados do modelo)
+   ===================================================================== */
+var raiz = new THREE.Group(); cena.add(raiz);
+var anotacoes = new THREE.Group(); cena.add(anotacoes);
+var OBJS = [];        // objetos registrados (equivalente a "elementos BIM")
+var seq = 0;
+var ordemExplosao = {"Fundação":0,"Concreto":0,"Pavimentação":0,"Drenagem":0,"Edificação":1,
+  "Estrutura metálica":2,"Estrutura suporte":2,"Cerca e acessos":1,"Eletrodutos":1,"Aterramento":-1,
+  "Equipamento de pátio":3,"Barramento e conexões":4,"SPDA":5,"Iluminação":3,
+  "Combate a incêndio":1,"Sinalização e segurança":1,"Serviços auxiliares":1,
+  "Compensação reativa":3,"Média tensão":3,"Telecomunicações":4,
+  "Segurança eletrônica":3,"Linha de transmissão":4};
+
+function reg(obj, meta){
+  meta.id = "E" + String(++seq).padStart(4,"0");
+  obj.userData.meta = meta;
+  obj.userData.pos0 = obj.position.clone();
+  obj.traverse(function(n){
+    if(n.isMesh){ n.castShadow = true; n.receiveShadow = true; n.userData.dono = obj; }
+  });
+  OBJS.push(obj); raiz.add(obj);
+  return obj;
+}
+var DENS_ACO = 7850; // kg/m³
+function kgAco(volume){ return volume * DENS_ACO; }
+
+/* =====================================================================
+   5. GEOMETRIAS PARAMÉTRICAS
+   ===================================================================== */
+function caixa(lx,ly,lz,material){
+  var m = new THREE.Mesh(new THREE.BoxGeometry(lx,ly,lz), material);
+  return m;
+}
+function cil(r,h,material,seg){
+  return new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg||14), material);
+}
+
+// Isolador de porcelana com saias (perfil de revolução)
+function isolador(alt, raio, material){
+  var pts=[], n=Math.max(5,Math.round(alt/0.16)), passo=alt/n, rn=raio*0.46;
+  pts.push(new THREE.Vector2(rn*1.25,0));
+  for(var i=0;i<n;i++){
+    var y=i*passo;
+    pts.push(new THREE.Vector2(rn, y+passo*0.18));
+    pts.push(new THREE.Vector2(raio, y+passo*0.42));
+    pts.push(new THREE.Vector2(rn, y+passo*0.62));
+  }
+  pts.push(new THREE.Vector2(rn*1.25, alt));
+  var m = new THREE.Mesh(new THREE.LatheGeometry(pts, 16), material || MT.porcelana);
+  return m;
+}
+// Flange metálica de topo/base de coluna isolante
+function flange(r, h){ return cil(r, h, MT.galvan, 14); }
+
+// Coluna treliçada de pórtico (4 montantes + diagonais)
+function colunaTrelicada(alt, larg, gDiag){
+  var g = new THREE.Group(), r = larg/2, volume = 0;
+  var pos = [[-r,-r],[r,-r],[r,r],[-r,r]];
+  pos.forEach(function(p){
+    var c = caixa(0.11,alt,0.11,MT.galvan);
+    c.position.set(p[0], alt/2, p[1]); g.add(c);
+    volume += 0.11*0.11*alt*0.42; // cantoneira equivalente
+  });
+  var passo = 1.5, n = Math.floor(alt/passo);
+  for(var i=0;i<n;i++){
+    var y = i*passo + passo/2;
+    [[0,-r],[0,r],[-r,0],[r,0]].forEach(function(f,k){
+      var comp = Math.sqrt(passo*passo + larg*larg);
+      var d = caixa(0.07, comp, 0.07, MT.galvan);
+      var eixoX = (k<2);
+      d.position.set(f[0], y, f[1]);
+      d.rotation.z = eixoX ? (i%2?1:-1)*Math.atan2(larg,passo) : 0;
+      d.rotation.x = eixoX ? 0 : (i%2?-1:1)*Math.atan2(larg,passo);
+      g.add(d); volume += 0.07*0.07*comp*0.45;
+      if(i%2===0){
+        var h = caixa(eixoX?larg:0.07, 0.07, eixoX?0.07:larg, MT.galvan);
+        h.position.set(f[0], y-passo/2, f[1]); g.add(h);
+        volume += 0.07*0.07*larg*0.45;
+      }
+    });
+  }
+  g.userData.volumeAco = volume;
+  return g;
+}
+
+// Viga treliçada horizontal do pórtico
+function vigaTrelicada(vao, altura){
+  var g = new THREE.Group(), volume = 0, h = altura;
+  [-h/2, h/2].forEach(function(dy){
+    [-h/2, h/2].forEach(function(dz){
+      var b = caixa(vao, 0.10, 0.10, MT.galvan);
+      b.position.set(0, dy, dz); g.add(b);
+      volume += 0.10*0.10*vao*0.45;
+    });
+  });
+  var passo = 1.4, n = Math.floor(vao/passo);
+  for(var i=0;i<n;i++){
+    var x = -vao/2 + passo/2 + i*passo;
+    var comp = Math.sqrt(passo*passo + h*h);
+    [-h/2,h/2].forEach(function(dz){
+      var d = caixa(comp, 0.07, 0.07, MT.galvan);
+      d.position.set(x, 0, dz);
+      d.rotation.z = (i%2?1:-1)*Math.atan2(h,passo);
+      g.add(d); volume += 0.07*0.07*comp*0.45;
+    });
+    var v = caixa(0.07, h, 0.07, MT.galvan);
+    v.position.set(x + passo/2, 0, 0); g.add(v);
+    volume += 0.07*0.07*h*0.45;
+  }
+  g.userData.volumeAco = volume;
+  return g;
+}
+
+// Condutor em catenária
+function condutor(a, b, flecha, material, raio){
+  var meio = a.clone().add(b).multiplyScalar(0.5);
+  meio.y -= (flecha===undefined ? a.distanceTo(b)*0.05 : flecha);
+  var curva = new THREE.CatmullRomCurve3([a, meio, b]);
+  var m = new THREE.Mesh(new THREE.TubeGeometry(curva, 20, raio||0.035, 6, false), material||MT.acsr);
+  m.userData.comprimento = curva.getLength();
+  return m;
+}
+
+/* ---------- Equipamentos de pátio ---------- */
+
+function eqParaRaios(T, tag, fase){
+  var g = new THREE.Group(), h = T.altIso*1.35;
+  var base = caixa(0.42,0.08,0.42,MT.galvan); base.position.y=0.04; g.add(base);
+  var col = isolador(h, 0.20, MT.polimero); col.position.y=0.08; g.add(col);
+  var fl = flange(0.17,0.09); fl.position.set(0, h+0.12, 0); g.add(fl);
+  var term = cil(0.05,0.28,MT.aluminio,10); term.position.y=h+0.3; g.add(term);
+  var contador = caixa(0.16,0.22,0.12,MT.creme); contador.position.set(0.32,0.2,0); g.add(contador);
+  var visor = caixa(0.09,0.09,0.03,MT.advertencia); visor.position.set(0.32,0.24,0.08); g.add(visor);
+  reg(g, {nome:"Para-raios de óxido de zinco", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Equipamento de pátio", categoria:"Para-raios", fase:fase,
+    material:"Invólucro polimérico / ZnO",
+    especificacao:"Para-raios ZnO "+Math.round(T.NBI*0.13)+" kV, Ur classe estação, NBI "+T.NBI+" kV",
+    norma:"ABNT NBR 16050 / IEC 60099-4", qtd:1, un:"un", massa:38});
+  return g;
+}
+
+function eqSeccionadora(T, tag, fase, motorizada){
+  var g = new THREE.Group(), h = T.altIso*1.05, sep = T.dFF*0.55+0.4;
+  var base = caixa(sep+0.9,0.12,0.5,MT.galvan); base.position.y=0.06; g.add(base);
+  [-sep/2, sep/2].forEach(function(x){
+    var c = isolador(h,0.19,MT.porcelana); c.position.set(x,0.12,0); g.add(c);
+    var t = flange(0.15,0.1); t.position.set(x,h+0.17,0); g.add(t);
+  });
+  var lam = caixa(sep*0.92,0.05,0.14,MT.cobre);
+  lam.position.set(-sep*0.06, h+0.42, 0); lam.rotation.z = -0.62; g.add(lam);
+  var ct = caixa(sep*0.2,0.05,0.14,MT.cobre); ct.position.set(sep/2, h+0.24,0); g.add(ct);
+  if(motorizada){
+    var cx = caixa(0.42,0.6,0.34,MT.creme); cx.position.set(0,0.4,0.5); g.add(cx);
+    var pl = caixa(0.24,0.12,0.02,MT.placa); pl.position.set(0,0.62,0.68); g.add(pl);
+    var haste = cil(0.05,h*0.8,MT.galvan,8); haste.position.set(0,h*0.4,0.2); g.add(haste);
+  }
+  // Lâmina de aterramento rápido: ligada à estrutura, fica rebatida quando aberta
+  if(P.aterRapido){
+    var baseT = caixa(0.3,0.1,0.3,MT.galvanEsc); baseT.position.set(sep/2+0.45,0.14,0); g.add(baseT);
+    var lamT = caixa(h*0.62,0.05,0.1,MT.cobre);
+    lamT.position.set(sep/2+0.45+h*0.16, h*0.2, 0); lamT.rotation.z = 1.02; g.add(lamT);
+    var conT = cil(0.03, 0.6, MT.cobreNu, 8); conT.position.set(sep/2+0.45,-0.2,0); g.add(conT);
+  }
+  reg(g, {nome:"Chave seccionadora tripolar"+(motorizada?" motorizada":" manual")+
+      (P.aterRapido?" com lâmina de terra":""), tag:tag,
+    disciplina:"ELETROMECANICA", sistema:"Equipamento de pátio", categoria:"Seccionadora", fase:fase,
+    material:"Aço galvanizado / porcelana / cobre eletrolítico",
+    especificacao:"Seccionadora "+T.NBI+" kV NBI, "+T.corrente+" A, abertura central"+
+      (motorizada?", comando motorizado 125 Vcc":", comando manual")+
+      (P.aterRapido?", com lâmina de aterramento rápido intertravada":""),
+    norma:"ABNT NBR IEC 62271-102", qtd:1, un:"un", massa:motorizada?310:240});
+  return g;
+}
+
+function eqTC(T, tag, fase){
+  var g = new THREE.Group(), h = T.altIso*1.1;
+  var base = caixa(0.5,0.1,0.5,MT.galvan); base.position.y=0.05; g.add(base);
+  var col = isolador(h,0.24,MT.porcelana); col.position.y=0.1; g.add(col);
+  var cab = cil(0.36,0.62,MT.tanque,16); cab.position.y=h+0.41; g.add(cab);
+  var tampa = cil(0.38,0.08,MT.galvan,16); tampa.position.y=h+0.76; g.add(tampa);
+  var term = cil(0.06,0.34,MT.aluminio,10); term.position.y=h+0.95; g.add(term);
+  var cxs = caixa(0.3,0.36,0.24,MT.creme); cxs.position.set(0.34,0.5,0); g.add(cxs);
+  var pt = caixa(0.2,0.1,0.02,MT.placa); pt.position.set(0.34,0.72,0.06); g.add(pt);
+  reg(g, {nome:"Transformador de corrente", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Equipamento de pátio", categoria:"TC", fase:fase,
+    material:"Porcelana / óleo isolante",
+    especificacao:"TC isolado a óleo, NBI "+T.NBI+" kV, multi-relação 600‑1200‑2000/5 A, 4 núcleos",
+    norma:"ABNT NBR 6856", qtd:1, un:"un", massa:420});
+  return g;
+}
+
+function eqTP(T, tag, fase){
+  var g = new THREE.Group(), h = T.altIso*1.25;
+  var base = caixa(0.46,0.1,0.46,MT.galvan); base.position.y=0.05; g.add(base);
+  var col = isolador(h,0.22,MT.porcelana); col.position.y=0.1; g.add(col);
+  var cap = cil(0.26,0.4,MT.tanque,14); cap.position.y=h+0.3; g.add(cap);
+  var term = cil(0.055,0.3,MT.aluminio,10); term.position.y=h+0.62; g.add(term);
+  var cxs = caixa(0.28,0.34,0.22,MT.creme); cxs.position.set(0.3,0.44,0); g.add(cxs);
+  reg(g, {nome:"Transformador de potencial capacitivo", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Equipamento de pátio", categoria:"TPC", fase:fase,
+    material:"Porcelana / núcleo capacitivo",
+    especificacao:"TPC "+T.NBI+" kV NBI, relação "+(T.NBI>700?"2000":"1200")+":1, classe 0,3 / 3P, com carrier",
+    norma:"ABNT NBR 6855", qtd:1, un:"un", massa:360});
+  return g;
+}
+
+function eqDisjuntor(T, tag){
+  var g = new THREE.Group(), h = T.altIso*1.3;
+  var base = caixa(2.3,0.16,1.0,MT.galvan); base.position.y=0.08; g.add(base);
+  [-0.75,0.75].forEach(function(x){
+    var pe = caixa(0.26,1.05,0.26,MT.galvanEsc); pe.position.set(x,0.68,0); g.add(pe);
+  });
+  var meca = caixa(1.5,0.95,0.85,MT.creme); meca.position.set(0,1.68,0); g.add(meca);
+  var faixa = caixa(1.52,0.1,0.87,MT.seguranca); faixa.position.set(0,1.22,0); g.add(faixa);
+  var painel = caixa(0.75,0.9,0.5,MT.creme); painel.position.set(0,0.62,0.9); g.add(painel);
+  var pTag = caixa(0.4,0.14,0.02,MT.placa); pTag.position.set(0,1.0,1.16); g.add(pTag);
+  var manom = cil(0.11,0.05,MT.advertencia,12); manom.rotation.x=Math.PI/2; manom.position.set(0,0.85,1.16); g.add(manom);
+  [-0.75,0.75].forEach(function(x){
+    var col = isolador(h,0.23,MT.porcelana); col.position.set(x,2.15,0); g.add(col);
+    var cam = cil(0.3,0.9,MT.polimero,14); cam.position.set(x,2.15+h+0.45,0); g.add(cam);
+    var t = cil(0.07,0.32,MT.aluminio,10); t.position.set(x,2.15+h+1.05,0); g.add(t);
+  });
+  var traves = caixa(1.5,0.14,0.14,MT.galvan); traves.position.set(0,2.15+h+0.2,0); g.add(traves);
+  reg(g, {nome:"Disjuntor a SF6", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Equipamento de pátio", categoria:"Disjuntor", fase:"A‑B‑C",
+    material:"Porcelana / SF6 / aço pintado",
+    especificacao:"Disjuntor SF6 tanque morto, "+T.NBI+" kV NBI, "+T.corrente+" A, 40 kA / 3 s, comando tripolar a mola",
+    norma:"ABNT NBR IEC 62271-100", qtd:1, un:"un", massa:2800});
+  return g;
+}
+
+function eqTrafo(T, tag, pot){
+  var g = new THREE.Group();
+  var tq = caixa(5.4,3.4,3.4,MT.tanque); tq.position.y=1.9; g.add(tq);
+  var tampa = caixa(5.6,0.28,3.6,MT.galvanEsc); tampa.position.y=3.72; g.add(tampa);
+  for(var i=0;i<12;i++){
+    var lado = i<6 ? -1 : 1, k = i%6;
+    var r = caixa(0.12,2.5,2.8,MT.radiador);
+    r.position.set(lado*(2.85+k*0.24), 2.0, 0); g.add(r);
+    var sup = caixa(0.12,0.1,2.8,MT.galvan);
+    sup.position.set(lado*(2.85+k*0.24), 3.3, 0); g.add(sup);
+  }
+  var cons = cil(0.5,4.0,MT.tanque,16); cons.rotation.z=Math.PI/2; cons.position.set(0,4.3,-1.8); g.add(cons);
+  var rele = caixa(0.3,0.3,0.3,MT.galvan); rele.position.set(1.2,4.2,-1.4); g.add(rele);
+  [-1.7,0,1.7].forEach(function(x){
+    var b = isolador(T.altIso*1.15,0.24,MT.porcelana); b.position.set(x,3.86,-1.05); g.add(b);
+    var t = cil(0.06,0.26,MT.aluminio,10); t.position.set(x,3.86+T.altIso*1.15+0.15,-1.05); g.add(t);
+  });
+  [-1.1,0,1.1].forEach(function(x){
+    var b2 = isolador(0.95,0.18,MT.porcelana); b2.position.set(x,3.86,1.15); g.add(b2);
+  });
+  var cmd = caixa(0.9,1.5,0.55,MT.creme); cmd.position.set(2.6,0.9,1.9); g.add(cmd);
+  var pTr = caixa(0.5,0.18,0.02,MT.placa); pTr.position.set(2.6,1.45,2.19); g.add(pTr);
+  // escada de acesso e guarda-corpo no topo, em amarelo de segurança
+  [-0.3,0.3].forEach(function(lx){
+    var mont = caixa(0.07,3.9,0.07,MT.seguranca); mont.position.set(2.0+lx,1.95,1.78); g.add(mont);
+  });
+  for(var d3=0; d3<9; d3++){
+    var deg = caixa(0.68,0.05,0.16,MT.seguranca); deg.position.set(2.0,0.35+d3*0.42,1.78); g.add(deg);
+  }
+  [[-2.6,0],[2.6,0],[0,-1.7],[0,1.7]].forEach(function(gp){
+    var corr = caixa(gp[0]===0?5.4:0.06, 0.06, gp[0]===0?0.06:3.4, MT.seguranca);
+    corr.position.set(gp[0], 4.78, gp[1]); g.add(corr);
+  });
+  [[-2.6,-1.7],[2.6,-1.7],[-2.6,1.7],[2.6,1.7],[0,-1.7],[0,1.7]].forEach(function(gp2){
+    var post2 = caixa(0.06,1.05,0.06,MT.seguranca); post2.position.set(gp2[0],4.3,gp2[1]); g.add(post2);
+  });
+  var comut = cil(0.55,1.9,MT.tanque,14); comut.position.set(-2.9,1.6,1.5); g.add(comut);
+  [[-3.1,1.75],[-3.1,-1.75],[3.1,1.75]].forEach(function(vp){
+    var vent = cil(0.42,0.16,MT.azulPainel,14); vent.rotation.x=Math.PI/2;
+    vent.position.set(vp[0],1.1,vp[1]); g.add(vent);
+  });
+  reg(g, {nome:"Transformador de força", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Equipamento de pátio", categoria:"Transformador", fase:"A‑B‑C",
+    material:"Aço carbono pintado / óleo mineral isolante",
+    especificacao:"Trafo "+pot+" MVA, "+T.NBI+" kV NBI no AT, 13,8 kV no BT, ONAN/ONAF, comutador sob carga ±8×1,25 %",
+    norma:"ABNT NBR 5356 / NBR 5416", qtd:1, un:"un", massa:78000});
+  return g;
+}
+
+// Estrutura suporte de equipamento + sua fundação
+function suporteEq(h, tag, lado){
+  var g = new THREE.Group(), l = lado||0.8, volAco = 0;
+  [[-l/2,-l/2],[l/2,-l/2],[l/2,l/2],[-l/2,l/2]].forEach(function(p){
+    var c = caixa(0.09,h,0.09,MT.galvan); c.position.set(p[0],h/2,p[1]); g.add(c);
+    volAco += 0.09*0.09*h*0.45;
+  });
+  var nH = Math.max(1,Math.floor(h/1.3));
+  for(var i=1;i<=nH;i++){
+    var y=i*(h/(nH+1));
+    [[0,-l/2,l,0.06,0.06],[0,l/2,l,0.06,0.06]].forEach(function(f){
+      var b=caixa(f[2],f[3],f[4],MT.galvan); b.position.set(f[0],y,f[1]); g.add(b);
+      volAco += f[2]*f[3]*f[4]*0.5;
+    });
+    [[-l/2,0],[l/2,0]].forEach(function(f){
+      var b2=caixa(0.06,0.06,l,MT.galvan); b2.position.set(f[0],y,f[1]); g.add(b2);
+      volAco += 0.06*0.06*l*0.5;
+    });
+  }
+  var topo = caixa(l+0.18,0.1,l+0.18,MT.galvanEsc); topo.position.y=h+0.05; g.add(topo);
+  volAco += (l+0.18)*0.1*(l+0.18)*0.35;
+  reg(g, {nome:"Estrutura suporte de equipamento", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Estrutura suporte", categoria:"Suporte metálico",
+    material:"Perfil laminado ASTM A36 galvanizado a fogo",
+    especificacao:"Suporte treliçado H = "+h.toFixed(2)+" m, base "+l.toFixed(2)+"×"+l.toFixed(2)+" m, galvanização 86 µm",
+    norma:"ABNT NBR 8800 / NBR 6323", qtd:Math.round(kgAco(volAco)), un:"kg", massa:kgAco(volAco)});
+  return g;
+}
+
+/* ---------- Elementos civis ---------- */
+function fundacao(x, z, lado, alt, tipo, tag, nome){
+  var g = new THREE.Group(), vol = 0;
+  var sap = caixa(lado, alt, lado, MT.concreto); sap.position.y = -alt/2 + 0.12; g.add(sap);
+  vol += lado*lado*alt;
+  var pedestal = caixa(lado*0.42, 0.75, lado*0.42, MT.concreto);
+  pedestal.position.y = 0.5; g.add(pedestal);
+  vol += lado*0.42*lado*0.42*0.75;
+  if(tipo === "bloco"){
+    for(var i=0;i<4;i++){
+      var ex = cil(0.2, 5.5, MT.concretoEsc, 12);
+      ex.position.set((i%2?1:-1)*lado*0.3, -alt-2.6, (i<2?1:-1)*lado*0.3); g.add(ex);
+      vol += Math.PI*0.04*5.5;
+    }
+  } else if(tipo === "tubulao"){
+    var fuste = cil(lado*0.28, 4.5, MT.concretoEsc, 16); fuste.position.y = -alt-2.1; g.add(fuste);
+    var bulbo = new THREE.Mesh(new THREE.CylinderGeometry(lado*0.28, lado*0.55, 1.2, 16), MT.concretoEsc);
+    bulbo.position.y = -alt-4.9; g.add(bulbo);
+    vol += Math.PI*Math.pow(lado*0.28,2)*4.5 + 0.9;
+  }
+  var nomeTipo = tipo==="sapata" ? "Sapata isolada" : tipo==="bloco" ? "Bloco sobre 4 estacas" : "Tubulão a céu aberto";
+  g.position.set(x, 0, z);
+  reg(g, {nome: nome || nomeTipo, tag:tag, disciplina:"CIVIL", sistema:"Fundação",
+    categoria:"Fundação em concreto armado",
+    material:"Concreto C"+P.fck+" + CA‑50",
+    especificacao:nomeTipo+" "+lado.toFixed(2)+"×"+lado.toFixed(2)+"×"+alt.toFixed(2)+" m, fck "+P.fck+" MPa, cobrimento 40 mm",
+    norma:"ABNT NBR 6118 / NBR 6122", qtd:+vol.toFixed(2), un:"m³",
+    aco:Math.round(vol*85), fck:P.fck});
+  return g;
+}
+
+function laje(x,z,lx,lz,esp,tag,nome,sistema){
+  var m = caixa(lx,esp,lz,MT.concreto); m.position.set(x, esp/2, z);
+  reg(m, {nome:nome, tag:tag, disciplina:"CIVIL", sistema:sistema||"Concreto",
+    categoria:"Concreto moldado in loco", material:"Concreto C"+P.fck+" + CA‑50",
+    especificacao:nome+" "+lx.toFixed(2)+"×"+lz.toFixed(2)+"×"+esp.toFixed(2)+" m, fck "+P.fck+" MPa",
+    norma:"ABNT NBR 6118", qtd:+(lx*lz*esp).toFixed(2), un:"m³",
+    aco:Math.round(lx*lz*esp*85), fck:P.fck});
+  return m;
+}
+
+// Bobina de bloqueio de onda portadora (wave trap), montada sobre isolador
+function eqCarrier(T, tag, fase){
+  var g = new THREE.Group();
+  var col = isolador(T.altIso*0.85, 0.22, MT.porcelana); g.add(col);
+  var y0 = T.altIso*0.85 + 0.15;
+  var bob = cil(0.62, 1.05, MT.aluminio, 18); bob.position.y = y0 + 0.55; g.add(bob);
+  for(var v=0; v<7; v++){                       // espiras aparentes do enrolamento
+    var esp = new THREE.Mesh(new THREE.TorusGeometry(0.63, 0.035, 6, 20), MT.aluminio);
+    esp.rotation.x = Math.PI/2; esp.position.y = y0 + 0.12 + v*0.14; g.add(esp);
+  }
+  var tampa = cil(0.66, 0.08, MT.galvanEsc, 18); tampa.position.y = y0 + 1.12; g.add(tampa);
+  var sint = caixa(0.5,0.3,0.3, MT.creme); sint.position.set(0, y0+1.32, 0); g.add(sint);
+  var term = cil(0.06,0.3,MT.aluminio,10); term.position.y = y0 + 1.6; g.add(term);
+  reg(g, {nome:"Bobina de bloqueio de onda portadora", tag:tag,
+    disciplina:"ELETROMECANICA", sistema:"Telecomunicações", categoria:"Wave trap", fase:fase,
+    material:"Alumínio / isolador de porcelana",
+    especificacao:"Bobina de bloqueio "+T.corrente+" A, 0,5 mH, faixa 40–500 kHz, com dispositivo de sintonia e para-raios",
+    norma:"ABNT NBR IEC 60353", qtd:1, un:"un", massa:180});
+  return g;
+}
+
+// Banco de capacitores shunt em rack, com reator de bloqueio e para-raios
+function eqBancoCapacitores(tag, potencia){
+  var g = new THREE.Group();
+  var vol = 6.4*5.2*0.35;
+  var base = caixa(6.4,0.35,5.2,MT.concreto); base.position.y=0.17; g.add(base);
+  // estrutura metálica sobre isoladores de pedestal
+  [[-2.6,-1.9],[2.6,-1.9],[-2.6,1.9],[2.6,1.9]].forEach(function(p){
+    var iso = isolador(0.9,0.2,MT.porcelana); iso.position.set(p[0],0.35,p[1]); g.add(iso);
+  });
+  var quadro = caixa(6.0,0.12,4.4,MT.galvan); quadro.position.y=1.3; g.add(quadro);
+  // três níveis de células capacitivas, agrupadas por fase
+  for(var f=0; f<3; f++){
+    for(var n=0; n<4; n++){
+      for(var niv=0; niv<2; niv++){
+        var cel = caixa(0.42,0.75,0.28,MT.azulPainel);
+        cel.position.set(-2.2 + f*2.2 + (n%2)*0.55, 1.78 + niv*0.95, -1.4 + Math.floor(n/2)*2.8);
+        g.add(cel);
+        var fus = cil(0.05,0.42,MT.porcelana,8);
+        fus.position.set(cel.position.x, cel.position.y+0.58, cel.position.z); g.add(fus);
+      }
+    }
+    var barr = cil(0.05, 4.6, MT.aluminio, 10);
+    barr.rotation.x = Math.PI/2; barr.position.set(-2.2 + f*2.2, 3.75, 0); g.add(barr);
+    var pr = isolador(1.3,0.17,MT.polimero); pr.position.set(-2.2+f*2.2, 1.42, 2.0); g.add(pr);
+  }
+  // reator limitador de corrente de energização
+  var reat = cil(0.75, 1.1, MT.creme, 16); reat.position.set(2.6, 2.3, 0); g.add(reat);
+  var estrut = caixa(0.14,4.2,0.14,MT.galvan);
+  [[-2.9,-2.0],[2.9,-2.0],[-2.9,2.0],[2.9,2.0]].forEach(function(p2){
+    var col2 = estrut.clone(); col2.position.set(p2[0],2.1,p2[1]); g.add(col2);
+  });
+  var cerc = caixa(6.6,0.06,0.06,MT.seguranca); cerc.position.set(0,1.0,-2.5); g.add(cerc);
+  reg(g, {nome:"Banco de capacitores shunt", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Compensação reativa", categoria:"Banco de capacitores",
+    material:"Células em aço inoxidável, estrutura galvanizada, isoladores de porcelana",
+    especificacao:"Banco shunt "+potencia+" Mvar, 13,8 kV, ligação dupla estrela isolada, proteção por desequilíbrio e fusíveis externos",
+    norma:"ABNT NBR 5282 / IEEE 18", qtd:1, un:"un", massa:9500, aco:Math.round(vol*85)});
+  return g;
+}
+
+// Reator shunt de linha, tanque cilíndrico com radiadores
+function eqReator(T, tag){
+  var g = new THREE.Group();
+  var tq = cil(1.7, 3.4, MT.tanque, 20); tq.position.y=1.9; g.add(tq);
+  var tampa = cil(1.8, 0.2, MT.galvanEsc, 20); tampa.position.y=3.7; g.add(tampa);
+  for(var r=0; r<8; r++){
+    var ang = (r/8)*6.2832;
+    var rad = caixa(0.1, 2.2, 1.1, MT.radiador);
+    rad.position.set(Math.cos(ang)*2.1, 2.0, Math.sin(ang)*2.1);
+    rad.rotation.y = -ang; g.add(rad);
+  }
+  [-0.9,0,0.9].forEach(function(x){
+    var b = isolador(T.altIso*1.1, 0.22, MT.porcelana); b.position.set(x,3.85,0); g.add(b);
+    var t = cil(0.06,0.26,MT.aluminio,10); t.position.set(x,3.85+T.altIso*1.1+0.14,0); g.add(t);
+  });
+  var cons = cil(0.4, 2.6, MT.tanque, 14); cons.rotation.z=Math.PI/2; cons.position.set(0,4.3,-1.5); g.add(cons);
+  var cmd = caixa(0.8,1.3,0.5,MT.creme); cmd.position.set(2.2,0.85,1.5); g.add(cmd);
+  reg(g, {nome:"Reator shunt de linha", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Compensação reativa", categoria:"Reator de derivação",
+    material:"Aço carbono pintado / óleo mineral isolante",
+    especificacao:"Reator shunt monofásico "+(T.NBI>700?"30":"15")+" Mvar, "+T.NBI+" kV NBI, resfriamento ONAN",
+    norma:"ABNT NBR 5356-6", qtd:1, un:"un", massa:32000});
+  return g;
+}
+
+// Casa de cubículos de 13,8 kV (metal-clad) com terminações de cabo isolado
+function eqCubiculos(tag, n){
+  var g = new THREE.Group();
+  var larg = n*0.95 + 1.2;
+  var piso = caixa(larg+1.6, 0.3, 5.2, MT.concreto); piso.position.y=0.15; g.add(piso);
+  var casa2 = caixa(larg+1.2, 3.4, 4.6, MT.creme); casa2.position.y = 2.0; g.add(casa2);
+  var cob2 = caixa(larg+1.8, 0.25, 5.0, MT.telhaAzul); cob2.position.y=3.8; g.add(cob2);
+  var rod = caixa(larg+1.25, 0.5, 4.65, MT.azulPainel); rod.position.y=0.55; g.add(rod);
+  for(var c=0; c<n; c++){
+    var cub = caixa(0.9, 2.3, 0.12, MT.creme);
+    cub.position.set(-larg/2 + 0.8 + c*0.95, 1.55, -2.32); g.add(cub);
+    var vis = caixa(0.34,0.3,0.03,MT.preto);
+    vis.position.set(cub.position.x, 2.35, -2.36); g.add(vis);
+    var lamp2 = caixa(0.09,0.09,0.03,MT.verde);
+    lamp2.position.set(cub.position.x+0.28, 2.35, -2.37); g.add(lamp2);
+  }
+  var porta2 = caixa(1.0,2.2,0.1,MT.laranja); porta2.position.set(larg/2+0.1,1.4,-2.3); g.add(porta2);
+  reg(g, {nome:"Cubículos blindados de 13,8 kV", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Média tensão", categoria:"Painel metal-clad",
+    material:"Chapa de aço dobrada com pintura eletrostática, disjuntores a vácuo extraíveis",
+    especificacao:n+" cubículos metal-clad 15 kV, 1250 A, 25 kA / 1 s, disjuntor a vácuo extraível e relés numéricos",
+    norma:"ABNT NBR IEC 62271-200", qtd:n, un:"un", massa:n*850});
+  return g;
+}
+
+// Transformador de serviço auxiliar (13,8 kV / 380-220 V)
+function eqTrafoAux(tag){
+  var g = new THREE.Group();
+  var base = caixa(2.6,0.3,2.2,MT.concreto); base.position.y=0.15; g.add(base);
+  var tq = caixa(1.6,1.5,1.2,MT.tanque); tq.position.y=1.05; g.add(tq);
+  var tampa = caixa(1.7,0.14,1.3,MT.galvanEsc); tampa.position.y=1.87; g.add(tampa);
+  [-0.5,0,0.5].forEach(function(x){
+    var b = isolador(0.75,0.15,MT.porcelana); b.position.set(x,1.9,-0.4); g.add(b);
+  });
+  [-0.35,0,0.35].forEach(function(x){
+    var b2 = isolador(0.4,0.1,MT.polimero); b2.position.set(x,1.9,0.42); g.add(b2);
+  });
+  for(var rr=0; rr<4; rr++){
+    var rad2 = caixa(0.07,1.1,1.0,MT.radiador);
+    rad2.position.set(-0.85 - (rr%2)*0.16 + (rr>1?1.86:0), 1.05, 0); g.add(rad2);
+  }
+  var qd = caixa(0.7,1.4,0.4,MT.azulPainel); qd.position.set(1.6,0.85,0.7); g.add(qd);
+  reg(g, {nome:"Transformador de serviço auxiliar", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Média tensão", categoria:"Transformador auxiliar",
+    material:"Aço carbono pintado / óleo mineral isolante",
+    especificacao:"Trafo SSA 300 kVA, 13,8 kV / 380‑220 V, Dyn1, resfriamento ONAN, proteção por chave fusível",
+    norma:"ABNT NBR 5356", qtd:1, un:"un", massa:1600});
+  return g;
+}
+
+// Torre autoportante de linha de transmissão, fora da cerca
+function torreLinha(T, tag, altura, vao){
+  var g = new THREE.Group(), volAco = 0;
+  var baseL = 5.5, topoL = 1.6, seg = 9, passoY = altura/seg;
+  for(var i=0;i<seg;i++){
+    var y = i*passoY;
+    var l1 = baseL + (topoL-baseL)*(i/seg), l2 = baseL + (topoL-baseL)*((i+1)/seg);
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(q){
+      var p1 = new THREE.Vector3(q[0]*l1/2, y, q[1]*l1/2);
+      var p2 = new THREE.Vector3(q[0]*l2/2, y+passoY, q[1]*l2/2);
+      var comp = p1.distanceTo(p2);
+      var m = caixa(0.1, comp, 0.1, MT.galvan);
+      m.position.copy(p1).lerp(p2,0.5);
+      m.lookAt(p2); m.rotateX(Math.PI/2);
+      g.add(m); volAco += 0.1*0.1*comp*0.45;
+    });
+    // diagonais e travamento horizontal
+    [0,1,2,3].forEach(function(f){
+      var a = f*Math.PI/2;
+      var comp2 = Math.sqrt(passoY*passoY + l1*l1);
+      var d = caixa(comp2, 0.07, 0.07, MT.galvan);
+      d.position.set(f<2 ? 0 : (f===2?-l1/2:l1/2), y+passoY/2, f<2 ? (f===0?-l1/2:l1/2) : 0);
+      if(f<2) d.rotation.z = (i%2?1:-1)*Math.atan2(passoY,l1);
+      else { d.rotation.y = Math.PI/2; d.rotation.z = (i%2?-1:1)*Math.atan2(passoY,l1); }
+      g.add(d); volAco += 0.07*0.07*comp2*0.45;
+    });
+    var trav = new THREE.Mesh(new THREE.BoxGeometry(l1,0.07,0.07), MT.galvan);
+    trav.position.y = y; g.add(trav);
+    var trav2 = new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,l1), MT.galvan);
+    trav2.position.y = y; g.add(trav2);
+    volAco += 0.07*0.07*l1*0.9;
+  }
+  // mísulas e cadeias de isoladores
+  var niveis = [[altura*0.74, vao*1.15],[altura*0.86, vao*1.35],[altura*0.98, vao*1.15]];
+  niveis.forEach(function(nv, k){
+    var misula = caixa(nv[1], 0.16, 0.16, MT.galvan);
+    misula.position.set(0, nv[0], 0); g.add(misula);
+    var diag = caixa(nv[1]*0.55, 0.09, 0.09, MT.galvan);
+    diag.position.set(0, nv[0]-0.9, 0); diag.rotation.z = 0.5; g.add(diag);
+    volAco += nv[1]*0.16*0.16*0.5;
+    [-nv[1]/2, nv[1]/2].forEach(function(lx){
+      for(var d2=0; d2<Math.max(6, Math.round(T.NBI/90)); d2++){
+        var disco = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.055,10), MT.porcelana);
+        disco.position.set(lx, nv[0]-0.35-d2*0.16, 0); g.add(disco);
+      }
+    });
+  });
+  var mastro = caixa(0.12, 3.5, 0.12, MT.galvan); mastro.position.y = altura+1.5; g.add(mastro);
+  reg(g, {nome:"Torre autoportante de linha de transmissão", tag:tag,
+    disciplina:"ELETROMECANICA", sistema:"Linha de transmissão", categoria:"Estrutura de linha",
+    material:"Cantoneira de aço ASTM A572 galvanizada a fogo",
+    especificacao:"Torre autoportante de suspensão, altura útil "+altura.toFixed(1)+
+      " m, circuito simples "+(T.NBI>700?"triangular":"vertical")+", cadeias de isoladores de disco",
+    norma:"ABNT NBR 8850 / NBR 5422", qtd:Math.round(kgAco(volAco)), un:"kg", massa:kgAco(volAco)});
+  return g;
+}
+
+// Torre estaiada de telecomunicações com antenas
+function torreTelecom(tag, altura){
+  var g = new THREE.Group(), volAco = 0, lado = 0.9;
+  for(var i=0;i<Math.floor(altura/1.5);i++){
+    var y = i*1.5;
+    [[-1,-1],[1,-1],[0,1]].forEach(function(q){
+      var m = caixa(0.07,1.5,0.07,MT.galvan);
+      m.position.set(q[0]*lado/2, y+0.75, q[1]*lado/2); g.add(m);
+      volAco += 0.07*0.07*1.5*0.5;
+    });
+    var tr = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,lado*1.2,6), MT.galvan);
+    tr.rotation.z = Math.PI/2; tr.position.y = y; g.add(tr);
+    var dg = caixa(1.7,0.05,0.05,MT.galvan);
+    dg.position.y = y+0.75; dg.rotation.z = (i%2?1:-1)*0.72; g.add(dg);
+    volAco += 1.7*0.05*0.05;
+  }
+  // antenas parabólicas e painel de rádio
+  [[altura*0.82, 0.9],[altura*0.62, 0.65]].forEach(function(a2, k){
+    var par = new THREE.Mesh(new THREE.SphereGeometry(a2[1], 14, 8, 0, 6.2832, 0, 1.0), MT.creme);
+    par.rotation.x = -Math.PI/2 + 0.2; par.position.set(0.9, a2[0], 0); g.add(par);
+    var braco = caixa(0.9,0.07,0.07,MT.galvan); braco.position.set(0.45,a2[0],0); g.add(braco);
+  });
+  var painelR = caixa(0.2,1.2,0.25,MT.creme); painelR.position.set(-0.7, altura*0.92, 0); g.add(painelR);
+  var baliza = new THREE.Mesh(new THREE.SphereGeometry(0.16,10,8),
+    new THREE.MeshStandardMaterial({color:0xD2232A, emissive:0x8e1218, emissiveIntensity:.8, roughness:.5}));
+  baliza.position.y = altura + 0.4; g.add(baliza);
+  reg(g, {nome:"Torre de telecomunicações", tag:tag, disciplina:"ELETROMECANICA",
+    sistema:"Telecomunicações", categoria:"Torre metálica",
+    material:"Perfil tubular galvanizado, seção triangular",
+    especificacao:"Torre autoportante "+altura.toFixed(0)+" m com antenas parabólicas, rádio digital e sinalização noturna",
+    norma:"ABNT NBR 8800 / ICA 100‑40", qtd:Math.round(kgAco(volAco)), un:"kg", massa:kgAco(volAco)});
+  return g;
+}
+
+/* =====================================================================
+   6. MONTAGEM DO MODELO
+   ===================================================================== */
+function limpar(){
+  [raiz, anotacoes].forEach(function(grp){
+    while(grp.children.length){
+      var c = grp.children.pop();
+      c.traverse(function(n){
+        if(n.geometry) n.geometry.dispose();
+        if(n.isSprite && n.material.map) n.material.map.dispose();
+      });
+    }
+  });
+  OBJS.length = 0; seq = 0; selecionado = null;
+}
+
+function rotulo(texto, cor){
+  var c = document.createElement("canvas"), ctx = c.getContext("2d");
+  var f = "600 34px Inter, sans-serif";
+  ctx.font = f; var w = ctx.measureText(texto).width;
+  c.width = Math.ceil(w+28); c.height = 52;
+  ctx = c.getContext("2d"); ctx.font = f;
+  ctx.fillStyle = "rgba(6,23,43,.86)";
+  ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = cor || "#3074F6"; ctx.lineWidth = 3;
+  ctx.strokeRect(1.5,1.5,c.width-3,c.height-3);
+  ctx.fillStyle = "#EAF0F7"; ctx.textBaseline="middle";
+  ctx.fillText(texto, 14, 27);
+  var tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  var sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true}));
+  sp.scale.set(c.width/34, c.height/34, 1);
+  return sp;
+}
+
+function construir(){
+  limpar();
+  var T = TENSOES[P.tensao];
+  var vf = P.vaoFase, hB = P.hBarra, hP = P.hPortico, hS = P.hSuporte;
+  var nBays = P.bays, passo = P.passoBay, prof = P.profBay;
+  var extras = P.capacitores + (P.reator?1:0);
+  var largTotal = (nBays + P.trafos + extras + 1) * passo;
+  var x0 = -largTotal/2 + passo*0.9;
+  var zLinha = -prof/2, zBarra = prof/2 - 8;
+  var fases = [-vf, 0, vf], letra = ["A","B","C"];
+  var nBarras = P.arranjo==="dupla" ? 2 : P.arranjo==="transferencia" ? 2 : 1;
+
+  /* ---- terreno e brita ---- */
+  if(P.terreno){
+    var terr = caixa(largTotal+40, 0.6, prof+46, MT.terra);
+    terr.position.y = -0.62; terr.receiveShadow = true;
+    reg(terr, {nome:"Terraplenagem do pátio", tag:"CIV-TER-01", disciplina:"CIVIL",
+      sistema:"Pavimentação", categoria:"Movimento de terra", material:"Solo compactado",
+      especificacao:"Plataforma nivelada com compactação a 95 % do Proctor normal",
+      norma:"ABNT NBR 5681", qtd:+((largTotal+40)*(prof+46)).toFixed(1), un:"m²"});
+
+    var brita = caixa(largTotal+10, 0.2, prof+16, MT.brita);
+    brita.position.y = -0.1;
+    reg(brita, {nome:"Britamento do pátio", tag:"CIV-BRT-01", disciplina:"CIVIL",
+      sistema:"Pavimentação", categoria:"Pavimento drenante",
+      material:"Brita graduada nº 2, rocha sã",
+      especificacao:"Camada de brita e = 0,15 m sobre manta geotêxtil — resistividade superficial e segurança de toque",
+      norma:"ABNT NBR 15751", qtd:+((largTotal+10)*(prof+16)*0.15).toFixed(1), un:"m³"});
+  }
+
+  /* ---- barramento principal (corre no eixo X) ---- */
+  var zBar = [];
+  for(var b=0;b<nBarras;b++){
+    var zb = zBarra + b*(T.dFF+2.2);
+    zBar.push(zb);
+    fases.forEach(function(off,i){
+      var zf = zb + (i-1)*(T.dFF+0.6);
+      var tubo = cil(0.075, largTotal+2, MT.aluminio, 14);
+      tubo.rotation.z = Math.PI/2; tubo.position.set(0, hB + b*2.0, zf);
+      reg(tubo, {nome:"Barramento principal"+(nBarras>1?" — barra "+(b+1):""),
+        tag:"BAR-"+(b+1)+letra[i], disciplina:"ELETROMECANICA", sistema:"Barramento e conexões",
+        categoria:"Barramento tubular", fase:letra[i],
+        material:"Tubo de alumínio liga 6063‑T6",
+        especificacao:"Tubo Ø 4\" × 6,35 mm, capacidade "+T.corrente+" A, altura "+(hB+b*2).toFixed(2)+" m",
+        norma:"ABNT NBR 5422 / IEEE 605", qtd:+(largTotal+2).toFixed(1), un:"m",
+        massa:(largTotal+2)*7.8});
+    });
+    // isoladores de apoio do barramento
+    for(var xi=0; xi<=nBays+P.trafos; xi++){
+      var xs = x0 + xi*passo - passo*0.5;
+      fases.forEach(function(off,i){
+        var zf2 = zb + (i-1)*(T.dFF+0.6);
+        var col = isolador(T.altIso*1.1, 0.2, MT.porcelana);
+        var gi = new THREE.Group(); gi.add(col);
+        gi.position.set(xs, hB + b*2.0 - T.altIso*1.1 - 0.1, zf2);
+        reg(gi, {nome:"Isolador suporte de barramento", tag:"ISO-B"+(b+1)+letra[i]+"-"+(xi+1),
+          disciplina:"ELETROMECANICA", sistema:"Barramento e conexões", categoria:"Isolador de apoio",
+          fase:letra[i], material:"Porcelana vitrificada marrom",
+          especificacao:"Coluna isolante NBI "+T.NBI+" kV, carga de ruptura ≥ 8 kN",
+          norma:"ABNT NBR 5032", qtd:1, un:"un", massa:45});
+      });
+    }
+  }
+
+  /* ---- pórticos de barramento ---- */
+  var largPort = vf*2 + 4;
+  function porticoCompleto(x, z, altura, vao, tag, nome, eixoX){
+    var g = new THREE.Group(), volAco = 0;
+    [-vao/2, vao/2].forEach(function(d, k){
+      var col = colunaTrelicada(altura, 0.85);
+      if(eixoX) col.position.set(d,0,0); else col.position.set(0,0,d);
+      g.add(col); volAco += col.userData.volumeAco;
+      var fd = fundacao(eixoX?x+d:x, eixoX?z:z+d, P.ladoSap, P.hSap, P.fund,
+        tag.replace("PT","FD")+"-"+(k+1), "Fundação de pórtico");
+    });
+    var viga = vigaTrelicada(vao, 1.5);
+    viga.position.y = altura + 0.75;
+    if(!eixoX) viga.rotation.y = Math.PI/2;
+    g.add(viga); volAco += viga.userData.volumeAco;
+    g.position.set(x, 0, z);
+    reg(g, {nome:nome, tag:tag, disciplina:"CIVIL", sistema:"Estrutura metálica",
+      categoria:"Pórtico treliçado",
+      material:"Perfil cantoneira ASTM A36 galvanizado a fogo",
+      especificacao:"Pórtico H = "+altura.toFixed(2)+" m, vão "+vao.toFixed(2)+" m, treliça espacial parafusada",
+      norma:"ABNT NBR 8800 / NBR 6323", qtd:Math.round(kgAco(volAco)), un:"kg",
+      massa:kgAco(volAco), parafusos:Math.round(kgAco(volAco)*0.035)});
+    return g;
+  }
+
+  // pórtico de barramento (transversal ao pátio, corre em X)
+  porticoCompleto(0, zBarra - 3.5, hB + 3.5, largTotal + 2, "PT-BAR-01",
+    "Pórtico de barramento", true);
+
+  /* ---- bays ---- */
+  var bays = [];
+  for(var k=0;k<nBays;k++) bays.push({tipo:"LT", tag:"LT"+String(k+1).padStart(2,"0"), x:x0 + k*passo});
+  for(var t=0;t<P.trafos;t++) bays.push({tipo:"TR", tag:"TR"+String(t+1).padStart(2,"0"), x:x0 + (nBays+t)*passo});
+
+  bays.forEach(function(bay, idx){
+    var X = bay.x, linha = bay.tipo === "LT";
+    var zPR  = zLinha + 4.5, zSecL = zLinha + 10, zTPC = zLinha + 15,
+        zTC  = zLinha + 20,  zDJ   = zLinha + 26, zSecB = zLinha + 32;
+
+    // pórtico de entrada de linha
+    if(linha){
+      porticoCompleto(X, zLinha, hP, largPort, "PT-"+bay.tag, "Pórtico de entrada de linha", true);
+    }
+
+    fases.forEach(function(off, i){
+      var xf = X + off, L = letra[i];
+      var alvo = [];
+
+      if(linha){
+        // bobina de bloqueio de onda portadora, em série com a entrada
+        var topoCar = null;
+        if(P.carrier){
+          var zCar = zLinha + 2.2;
+          var sCar = suporteEq(hS+0.5, "SUP-"+bay.tag+"-LT"+L); sCar.position.set(xf,0,zCar);
+          fundacao(xf,zCar,1.3,0.5,"sapata","FD-"+bay.tag+"-LT"+L,"Fundação de suporte de equipamento");
+          var car = eqCarrier(T, bay.tag+"-LT-"+L, L); car.position.set(xf, hS+0.6, zCar);
+          topoCar = new THREE.Vector3(xf, hS+0.6+T.altIso*0.85+1.75, zCar);
+        }
+        // para-raios
+        var sPR = suporteEq(hS, "SUP-"+bay.tag+"-PR"+L); sPR.position.set(xf,0,zPR);
+        fundacao(xf,zPR,1.2,0.45,"sapata","FD-"+bay.tag+"-PR"+L,"Fundação de suporte de equipamento");
+        var pr = eqParaRaios(T, bay.tag+"-PR-"+L, L); pr.position.set(xf, hS+0.1, zPR);
+        alvo.push(new THREE.Vector3(xf, hS+0.1+T.altIso*1.35+0.4, zPR));
+        if(topoCar){
+          var caboC = condutor(topoCar, alvo[0], 0.25, MT.aluminio, 0.034);
+          reg(caboC, {nome:"Conexão da bobina de bloqueio", tag:"CN-"+bay.tag+"-LT-"+L,
+            disciplina:"ELETROMECANICA", sistema:"Telecomunicações", categoria:"Conexão aérea",
+            fase:L, material:"Cabo de alumínio liga 1350",
+            especificacao:"Derivação do wave trap para o para-raios de entrada",
+            norma:"ABNT NBR 5370", qtd:+caboC.userData.comprimento.toFixed(2), un:"m"});
+        }
+        // condutor de entrada de linha
+        var cabo = condutor(new THREE.Vector3(xf, hP-0.8, zLinha),
+                            topoCar || alvo[0], 0.6, MT.acsr, 0.045);
+        reg(cabo, {nome:"Cabo de entrada de linha", tag:"CB-"+bay.tag+"-"+L+"-01",
+          disciplina:"ELETROMECANICA", sistema:"Barramento e conexões", categoria:"Cabo condutor",
+          fase:L, material:"Cabo CAA (ACSR) Grosbeak",
+          especificacao:"Condutor CAA 636 MCM, flecha de projeto conforme NBR 5422",
+          norma:"ABNT NBR 5422", qtd:+cabo.userData.comprimento.toFixed(2), un:"m"});
+      }
+
+      // seccionadora de linha
+      var sSL = suporteEq(hS+0.35, "SUP-"+bay.tag+"-89L"+L); sSL.position.set(xf,0,zSecL);
+      fundacao(xf,zSecL,1.4,0.5,"sapata","FD-"+bay.tag+"-89L"+L,"Fundação de suporte de equipamento");
+      var sec1 = eqSeccionadora(T, bay.tag+"-89L-"+L, L, true);
+      sec1.position.set(xf, hS+0.45, zSecL);
+
+      // TPC
+      var sTP = suporteEq(hS, "SUP-"+bay.tag+"-TP"+L); sTP.position.set(xf,0,zTPC);
+      fundacao(xf,zTPC,1.3,0.5,"sapata","FD-"+bay.tag+"-TP"+L,"Fundação de suporte de equipamento");
+      var tp = eqTP(T, bay.tag+"-TPC-"+L, L); tp.position.set(xf, hS+0.1, zTPC);
+
+      // TC
+      var sTC = suporteEq(hS, "SUP-"+bay.tag+"-TC"+L); sTC.position.set(xf,0,zTC);
+      fundacao(xf,zTC,1.4,0.5,"sapata","FD-"+bay.tag+"-TC"+L,"Fundação de suporte de equipamento");
+      var tc = eqTC(T, bay.tag+"-TC-"+L, L); tc.position.set(xf, hS+0.1, zTC);
+
+      // seccionadora de barra
+      var sSB = suporteEq(hS+0.35, "SUP-"+bay.tag+"-89B"+L); sSB.position.set(xf,0,zSecB);
+      fundacao(xf,zSecB,1.4,0.5,"sapata","FD-"+bay.tag+"-89B"+L,"Fundação de suporte de equipamento");
+      var sec2 = eqSeccionadora(T, bay.tag+"-89B-"+L, L, P.arranjo!=="simples");
+      sec2.position.set(xf, hS+0.45, zSecB);
+
+      // interligações entre equipamentos
+      var hEq = hS + 0.45 + T.altIso*1.05 + 0.5;
+      var pts = [
+        [new THREE.Vector3(xf, hS+0.1+T.altIso*1.35+0.4, zPR), new THREE.Vector3(xf,hEq,zSecL)],
+        [new THREE.Vector3(xf,hEq,zSecL), new THREE.Vector3(xf, hS+0.1+T.altIso*1.25+0.7, zTPC)],
+        [new THREE.Vector3(xf, hS+0.1+T.altIso*1.25+0.7, zTPC), new THREE.Vector3(xf, hS+0.1+T.altIso*1.1+1.0, zTC)],
+        [new THREE.Vector3(xf, hS+0.1+T.altIso*1.1+1.0, zTC), new THREE.Vector3(xf-0.75, 2.15+T.altIso*1.3+1.2, zDJ)],
+        [new THREE.Vector3(xf+0.75, 2.15+T.altIso*1.3+1.2, zDJ), new THREE.Vector3(xf,hEq,zSecB)],
+        [new THREE.Vector3(xf,hEq,zSecB), new THREE.Vector3(xf, hB, zBar[0] + (i-1)*(T.dFF+0.6))]
+      ];
+      if(!linha) pts.shift();
+      pts.forEach(function(par, n){
+        var c = condutor(par[0], par[1], 0.22, MT.aluminio, 0.032);
+        reg(c, {nome:"Conexão flexível entre equipamentos", tag:"CN-"+bay.tag+"-"+L+"-"+String(n+2).padStart(2,"0"),
+          disciplina:"ELETROMECANICA", sistema:"Barramento e conexões", categoria:"Conexão aérea",
+          fase:L, material:"Cabo de alumínio liga 1350 com conectores de cobre estanhado",
+          especificacao:"Conexão flexível 2×477 MCM com terminais aparafusados bimetálicos",
+          norma:"ABNT NBR 5370", qtd:+c.userData.comprimento.toFixed(2), un:"m"});
+      });
+    });
+
+    // disjuntor + base de concreto
+    laje(X, zDJ, 3.2, 2.0, 0.35, "FD-"+bay.tag+"-52", "Base de concreto do disjuntor", "Fundação");
+    var dj = eqDisjuntor(T, bay.tag+"-52"); dj.position.set(X, 0.35, zDJ);
+
+    // transformador
+    if(!linha){
+      var zTR = zBarra + 9;
+      laje(X, zTR, 8.0, 7.0, 0.4, "FD-"+bay.tag+"-TR", "Base de concreto do transformador", "Fundação");
+      if(P.bacia){
+        [[-4.1,0,0.35,7.4],[4.1,0,0.35,7.4],[0,-3.6,8.6,0.35],[0,3.6,8.6,0.35]].forEach(function(m,n){
+          var mur = caixa(m[2]===0.35?0.35:m[2], 0.9, m[3]===0.35?0.35:m[3], MT.concretoEsc);
+          mur.position.set(X+m[0], 0.45, zTR+m[1]);
+          reg(mur, {nome:"Mureta da bacia de contenção", tag:"CIV-BAC-"+bay.tag+"-"+(n+1),
+            disciplina:"CIVIL", sistema:"Concreto", categoria:"Contenção de óleo",
+            material:"Concreto C"+P.fck+" impermeabilizado",
+            especificacao:"Mureta h = 0,90 m com brita de extinção e caixa separadora água/óleo",
+            norma:"ABNT NBR 6118 / NBR 13231", qtd:+(mur.geometry.parameters.width*0.9*mur.geometry.parameters.depth).toFixed(2),
+            un:"m³", aco:Math.round(mur.geometry.parameters.width*0.9*mur.geometry.parameters.depth*85)});
+        });
+      }
+      if(P.bacia){
+        var gc3 = new THREE.Group(), passoG = 2.2;
+        [[-4.1,0,0,7.4],[4.1,0,0,7.4],[0,-3.6,8.6,0]].forEach(function(l){
+          var horiz = l[2] ? l[2] : 0.08, prof2 = l[3] ? l[3] : 0.08;
+          [0.55,1.05].forEach(function(hy){
+            var b3 = caixa(horiz||0.08, 0.06, prof2||0.06, MT.seguranca);
+            b3.position.set(l[0], 0.9+hy, l[1]); gc3.add(b3);
+          });
+          var n3 = Math.round((l[2]||l[3])/passoG);
+          for(var p3=0; p3<=n3; p3++){
+            var post3 = caixa(0.06,1.1,0.06,MT.seguranca);
+            post3.position.set(l[0] + (l[2]? -l[2]/2 + p3*(l[2]/n3) : 0), 1.45,
+                               l[1] + (l[3]? -l[3]/2 + p3*(l[3]/n3) : 0));
+            gc3.add(post3);
+          }
+        });
+        gc3.position.set(X, 0, zTR);
+        reg(gc3, {nome:"Guarda-corpo da bacia de contenção", tag:"SEG-GC-"+bay.tag,
+          disciplina:"ELETROMECANICA", sistema:"Sinalização e segurança",
+          categoria:"Guarda-corpo metálico",
+          material:"Tubo de aço galvanizado com pintura amarela de segurança",
+          especificacao:"Guarda-corpo h = 1,10 m, dois travessões, pintura Munsell 5Y 8/12",
+          norma:"ABNT NBR 14718 / NR‑12", qtd:Math.round(19), un:"m"});
+      }
+      var tr = eqTrafo(T, bay.tag+"-TR", T.NBI>700?150:50);
+      tr.position.set(X, 0.4, zTR); tr.rotation.y = Math.PI;
+      // conexão barra → trafo
+      fases.forEach(function(off,i){
+        var c2 = condutor(new THREE.Vector3(X+(i-1)*1.7, hB, zBar[0]+(i-1)*(T.dFF+0.6)),
+                          new THREE.Vector3(X+(i-1)*1.7, 4.3+T.altIso*1.15, zTR+1.05), 0.5, MT.aluminio, 0.034);
+        reg(c2, {nome:"Conexão barramento → transformador", tag:"CN-"+bay.tag+"-TR-"+letra[i],
+          disciplina:"ELETROMECANICA", sistema:"Barramento e conexões", categoria:"Conexão aérea",
+          fase:letra[i], material:"Cabo de alumínio 2×636 MCM",
+          especificacao:"Descida de barramento para bucha AT com conectores bimetálicos",
+          norma:"ABNT NBR 5370", qtd:+c2.userData.comprimento.toFixed(2), un:"m"});
+      });
+      // pórtico de transição do trafo
+      porticoCompleto(X, zBarra + 3, hB + 1.5, vf*2+3, "PT-"+bay.tag, "Pórtico de derivação do transformador", true);
+    }
+
+    // eixo de locação do bay
+    if(P.eixos){
+      var eixo = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(X,0.05,-prof/2-6), new THREE.Vector3(X,0.05,prof/2+12)]),
+        new THREE.LineBasicMaterial({color:0x3074F6, transparent:true, opacity:.5}));
+      anotacoes.add(eixo);
+      var rl = rotulo(bay.tag, "#3074F6"); rl.position.set(X, 1.4, -prof/2-7); anotacoes.add(rl);
+    }
+    if(P.tags){
+      var rt2 = rotulo(bay.tag+" · "+(linha?"Linha de transmissão":"Transformação"), "#FDB913");
+      rt2.position.set(X, hP+3, zDJ); anotacoes.add(rt2);
+    }
+  });
+
+  /* ---- canaletas de cabos ---- */
+  if(P.canaleta){
+    var zCan = zLinha + 29.5;
+    var compCan = largTotal + 6;
+    [[0, zCan, compCan, 0.7],[0, zBarra-6.5, compCan, 0.7]].forEach(function(cn, n){
+      var g = new THREE.Group();
+      [[-0.42,0.12,0.7],[0.42,0.12,0.7]].forEach(function(p){
+        var par = caixa(cn[2], 0.7, 0.12, MT.concretoEsc);
+        par.position.set(0, -0.23, p[0]); g.add(par);
+      });
+      var fundo = caixa(cn[2], 0.12, 0.96, MT.concretoEsc); fundo.position.y = -0.58; g.add(fundo);
+      g.position.set(cn[0], 0, cn[1]);
+      var vol = (cn[2]*0.7*0.12*2) + (cn[2]*0.12*0.96);
+      reg(g, {nome:"Canaleta de cabos de controle", tag:"CIV-CAN-"+String(n+1).padStart(2,"0"),
+        disciplina:"CIVIL", sistema:"Drenagem", categoria:"Canaleta pré-moldada",
+        material:"Concreto C"+P.fck+" com tampa em concreto armado",
+        especificacao:"Canaleta 0,70 × 0,70 m com tampas removíveis e dreno de fundo, extensão "+cn[2].toFixed(1)+" m",
+        norma:"ABNT NBR 6118", qtd:+vol.toFixed(2), un:"m³", aco:Math.round(vol*85),
+        extensao:cn[2]});
+    });
+  }
+
+  /* ---- banco de eletrodutos ---- */
+  if(P.eletroduto){
+    var zEd = zBarra - 6.5, zCasa = zBarra + 16;
+    bays.forEach(function(bay, n){
+      var g = new THREE.Group(), comp = 0;
+      var trechoZ = Math.abs(zCasa - (zLinha+29.5));
+      for(var d=0; d<6; d++){
+        var dx = (d%3 - 1)*0.28, dy = -0.9 - Math.floor(d/3)*0.28;
+        var tubo = cil(0.055, trechoZ, MT.pvc, 10);
+        tubo.rotation.x = Math.PI/2; tubo.position.set(dx, dy, 0); g.add(tubo);
+        comp += trechoZ;
+      }
+      var env = caixa(1.15, 0.85, trechoZ, new THREE.MeshStandardMaterial({
+        color:0x8b877f, roughness:.95, transparent:true, opacity:.34}));
+      env.position.set(0,-1.05,0); g.add(env);
+      g.position.set(bay.x, 0, (zCasa + zLinha+29.5)/2);
+      reg(g, {nome:"Banco de eletrodutos", tag:"ELD-"+bay.tag,
+        disciplina:"ELETROMECANICA", sistema:"Eletrodutos", categoria:"Eletroduto enterrado",
+        material:"Eletroduto PEAD/PVC rígido Ø 4\" envelopado em concreto",
+        especificacao:"6 dutos Ø 100 mm em banco envelopado, lastro de 0,10 m, profundidade 0,90 m",
+        norma:"ABNT NBR 15465 / NBR 14039", qtd:+comp.toFixed(1), un:"m",
+        dutos:6, envelope:+(1.15*0.85*trechoZ).toFixed(2)});
+
+      // caixa de passagem
+      var cp = new THREE.Group();
+      var cxp = caixa(1.3,1.3,1.3, MT.concretoEsc); cxp.position.y = -0.75; cp.add(cxp);
+      var tampa = caixa(1.4,0.12,1.4, MT.concreto); tampa.position.y = 0.02; cp.add(tampa);
+      cp.position.set(bay.x, 0, zCasa - 3);
+      reg(cp, {nome:"Caixa de passagem de cabos", tag:"CXP-"+bay.tag,
+        disciplina:"ELETROMECANICA", sistema:"Eletrodutos", categoria:"Caixa de passagem",
+        material:"Concreto armado pré-moldado com tampa em ferro fundido",
+        especificacao:"Caixa 1,20 × 1,20 × 1,20 m, tampa articulada classe B125",
+        norma:"ABNT NBR 15465", qtd:1, un:"un"});
+    });
+  }
+
+  /* ---- malha de aterramento ---- */
+  if(P.malha){
+    var mx = largTotal+8, mz = prof+14, pm = P.moduloMalha;
+    var pontos = [], nx = Math.floor(mx/pm), nz = Math.floor(mz/pm), compMalha = 0;
+    for(var i=0;i<=nx;i++){
+      var X2 = -mx/2 + i*pm;
+      pontos.push(new THREE.Vector3(X2,-0.6,-mz/2), new THREE.Vector3(X2,-0.6,mz/2));
+      compMalha += mz;
+    }
+    for(var j=0;j<=nz;j++){
+      var Z2 = -mz/2 + j*pm;
+      pontos.push(new THREE.Vector3(-mx/2,-0.6,Z2), new THREE.Vector3(mx/2,-0.6,Z2));
+      compMalha += mx;
+    }
+    var gm = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pontos),
+      new THREE.LineBasicMaterial({color:0xb87333}));
+    reg(gm, {nome:"Malha de aterramento", tag:"ATR-MLH-01", disciplina:"ELETROMECANICA",
+      sistema:"Aterramento", categoria:"Cabo de cobre nu",
+      material:"Cobre eletrolítico nu têmpera mole",
+      especificacao:"Cabo de cobre nu 50 mm², malha "+pm.toFixed(1)+" × "+pm.toFixed(1)+" m, profundidade 0,60 m, conexões exotérmicas",
+      norma:"ABNT NBR 15751 / IEEE 80", qtd:+compMalha.toFixed(0), un:"m",
+      massa:compMalha*0.45, conexoes:(nx+1)*(nz+1)});
+
+    // hastes de aterramento no perímetro
+    var hastes = new THREE.Group(), nH = 0;
+    for(var a=0;a<=nx;a+=2){
+      [-mz/2, mz/2].forEach(function(zz){
+        var h = cil(0.04,3,MT.cobreNu,8);
+        h.position.set(-mx/2 + a*pm, -2.1, zz); hastes.add(h); nH++;
+      });
+    }
+    reg(hastes, {nome:"Haste de aterramento copperweld", tag:"ATR-HST-01",
+      disciplina:"ELETROMECANICA", sistema:"Aterramento", categoria:"Haste de terra",
+      material:"Aço cobreado 254 µm",
+      especificacao:"Haste 5/8\" × 3,00 m cravada, conexão exotérmica ao cabo da malha",
+      norma:"ABNT NBR 15751", qtd:nH, un:"un"});
+  }
+
+  /* ---- SPDA / cabo guarda ---- */
+  if(P.spda){
+    var alturaG = hP + 2.5;
+    var cg = condutor(new THREE.Vector3(-largTotal/2-1, alturaG, zLinha),
+                      new THREE.Vector3(largTotal/2+1, alturaG, zLinha), 1.2, MT.acsr, 0.03);
+    reg(cg, {nome:"Cabo guarda de blindagem", tag:"SPD-CG-01", disciplina:"ELETROMECANICA",
+      sistema:"SPDA", categoria:"Cabo de blindagem",
+      material:"Cabo de aço galvanizado 3/8\"",
+      especificacao:"Cabo guarda sobre pórtico de entrada, ângulo de blindagem conforme método da esfera rolante (r = 45 m)",
+      norma:"ABNT NBR 5419-3", qtd:+cg.userData.comprimento.toFixed(1), un:"m"});
+
+    var cg2 = condutor(new THREE.Vector3(-largTotal/2-1, hB+6, zBarra-3.5),
+                       new THREE.Vector3(largTotal/2+1, hB+6, zBarra-3.5), 1.0, MT.acsr, 0.03);
+    reg(cg2, {nome:"Cabo guarda sobre barramento", tag:"SPD-CG-02", disciplina:"ELETROMECANICA",
+      sistema:"SPDA", categoria:"Cabo de blindagem", material:"Cabo de aço galvanizado 3/8\"",
+      especificacao:"Blindagem do barramento principal contra descargas diretas",
+      norma:"ABNT NBR 5419-3", qtd:+cg2.userData.comprimento.toFixed(1), un:"m"});
+
+    // mastros captores
+    [[-largTotal/2-1, zLinha],[largTotal/2+1, zLinha]].forEach(function(p,n){
+      var mst = cil(0.06, 3.5, MT.galvan, 8);
+      mst.position.set(p[0], alturaG+1.7, p[1]);
+      reg(mst, {nome:"Mastro captor", tag:"SPD-MST-"+(n+1), disciplina:"ELETROMECANICA",
+        sistema:"SPDA", categoria:"Captor", material:"Tubo de aço galvanizado",
+        especificacao:"Mastro Ø 60 mm × 3,50 m com ponta captora e descida em cabo de cobre 50 mm²",
+        norma:"ABNT NBR 5419", qtd:1, un:"un"});
+    });
+  }
+
+  /* ---- casa de comando ---- */
+  if(P.casa){
+    var xC = -largTotal/2 + 6, zC = zBarra + 16;
+    laje(xC, zC, 16, 9, 0.35, "CIV-CC-RAD", "Radier da casa de comando", "Fundação");
+    var casa = new THREE.Group();
+    var corpo = caixa(15,3.6,8,MT.creme); corpo.position.y=1.98; casa.add(corpo);
+    var rodape = caixa(15.05,0.55,8.05,MT.azulPainel); rodape.position.y=0.45; casa.add(rodape);
+    var cob = caixa(15.8,0.3,8.8,MT.telhaAzul); cob.position.y=3.93; casa.add(cob);
+    var plat = caixa(15.4,0.25,0.3,MT.concreto); plat.position.set(0,4.1,-4.3); casa.add(plat);
+    for(var w=0; w<5; w++){
+      var jan = caixa(1.5,1.1,0.1,MT.vidro); jan.position.set(-5.6+w*2.8, 2.5, -4.06); casa.add(jan);
+    }
+    var porta = caixa(1.8,2.3,0.12,MT.laranja); porta.position.set(5.5,1.33,-4.06); casa.add(porta);
+    var saida = caixa(0.6,0.22,0.03,MT.verde); saida.position.set(5.5,2.75,-4.09); casa.add(saida);
+    var ar1 = caixa(1.1,0.9,0.6,MT.azulPainel); ar1.position.set(-6.5,2.6,4.3); casa.add(ar1);
+    var ar2 = caixa(1.1,0.9,0.6,MT.azulPainel); ar2.position.set(-5.0,2.6,4.3); casa.add(ar2);
+    var ext = caixa(0.3,0.5,0.25,MT.advertencia); ext.position.set(7.0,0.85,-4.2); casa.add(ext);
+    casa.position.set(xC, 0.35, zC);
+    reg(casa, {nome:"Casa de comando", tag:"CIV-CC-01", disciplina:"CIVIL",
+      sistema:"Edificação", categoria:"Edificação em alvenaria",
+      material:"Alvenaria estrutural, cobertura metálica termoacústica",
+      especificacao:"Casa de comando 15,00 × 8,00 m, pé-direito 3,60 m, sala de painéis, baterias e serviços auxiliares",
+      norma:"ABNT NBR 6118 / NBR 9077", qtd:120, un:"m²"});
+  }
+
+  /* ---- rede de combate a incêndio ---- */
+  if(P.incendio){
+    var zInc = prof/2 + 6, compInc = largTotal + 14;
+    var tubo = cil(0.09, compInc, MT.advertencia, 12);
+    tubo.rotation.z = Math.PI/2; tubo.position.set(0, 0.55, zInc);
+    reg(tubo, {nome:"Rede de água de combate a incêndio", tag:"INC-RD-01",
+      disciplina:"ELETROMECANICA", sistema:"Combate a incêndio", categoria:"Tubulação de incêndio",
+      material:"Aço carbono SCH 40 pintado em vermelho segurança",
+      especificacao:"Anel de hidrantes DN 150, pressão de projeto 10 bar, pintura Munsell 5R 4/14",
+      norma:"ABNT NBR 13714 / NBR 12693", qtd:+compInc.toFixed(1), un:"m"});
+
+    var nHid = Math.max(2, Math.round(largTotal/28));
+    for(var hI=0; hI<nHid; hI++){
+      var gh = new THREE.Group();
+      var col = cil(0.11, 1.1, MT.hidrante, 10); col.position.y = 0.55; gh.add(col);
+      var cap = cil(0.16, 0.16, MT.hidrante, 10); cap.position.y = 1.18; gh.add(cap);
+      [[-0.2,0.85],[0.2,0.85]].forEach(function(b4){
+        var bico = cil(0.06,0.24,MT.hidrante,8); bico.rotation.z = Math.PI/2;
+        bico.position.set(b4[0], b4[1], 0); gh.add(bico);
+      });
+      var abrigo = caixa(0.8,0.8,0.35,MT.advertencia);
+      abrigo.position.set(1.3, 0.85, 0); gh.add(abrigo);
+      var pe = caixa(0.1,1.7,0.1,MT.acoPint); pe.position.set(1.3,0.85,0.2); gh.add(pe);
+      gh.position.set(-largTotal/2 + (hI+0.5)*(largTotal/nHid), 0, zInc + 1.6);
+      reg(gh, {nome:"Hidrante de coluna com abrigo de mangueiras", tag:"INC-HD-"+String(hI+1).padStart(2,"0"),
+        disciplina:"ELETROMECANICA", sistema:"Combate a incêndio", categoria:"Hidrante",
+        material:"Ferro fundido pintado em vermelho segurança",
+        especificacao:"Hidrante de coluna DN 100 com duas expedições de 2½\", abrigo com 2 mangueiras de 15 m e esguicho",
+        norma:"ABNT NBR 13714", qtd:1, un:"un"});
+    }
+  }
+
+  /* ---- serviços auxiliares ---- */
+  if(P.aux){
+    var xA = -largTotal/2 + 6, zA = zBarra + 25;
+    laje(xA, zA, 12, 7, 0.3, "CIV-AUX-BASE", "Base dos serviços auxiliares", "Fundação");
+
+    var cab = new THREE.Group();
+    var cont = caixa(6.0,2.7,2.6,MT.azulPainel); cont.position.y=1.5; cab.add(cont);
+    var teto = caixa(6.3,0.18,2.9,MT.telhaAzul); teto.position.y=2.94; cab.add(teto);
+    for(var pr=0; pr<3; pr++){
+      var pta = caixa(0.9,2.0,0.08,MT.creme); pta.position.set(-1.8+pr*1.8,1.15,-1.34); cab.add(pta);
+    }
+    var av = caixa(0.34,0.44,0.02,MT.placa); av.position.set(2.5,1.9,-1.35); cab.add(av);
+    cab.position.set(xA-2.5, 0.3, zA);
+    reg(cab, {nome:"Cabine de serviços auxiliares", tag:"AUX-CB-01",
+      disciplina:"ELETROMECANICA", sistema:"Serviços auxiliares", categoria:"Cabine metálica",
+      material:"Painel metálico modular com pintura eletrostática",
+      especificacao:"Cabine 6,00 × 2,50 m com quadros de 380/220 Vca, retificadores e banco de baterias 125 Vcc",
+      norma:"ABNT NBR IEC 61439 / NBR 5410", qtd:1, un:"un"});
+
+    var ger = new THREE.Group();
+    var carc = caixa(4.2,2.2,1.9,MT.seguranca); carc.position.y=1.25; ger.add(carc);
+    var esc = caixa(4.24,0.5,1.94,MT.preto); esc.position.y=0.35; ger.add(esc);
+    var exa = cil(0.16,1.5,MT.acoPint,10); exa.position.set(-1.7,2.9,0.6); ger.add(exa);
+    var grade = caixa(0.1,1.2,1.4,MT.preto); grade.position.set(2.12,1.3,0); ger.add(grade);
+    ger.position.set(xA+4.0, 0.3, zA);
+    reg(ger, {nome:"Grupo motogerador de emergência", tag:"AUX-GMG-01",
+      disciplina:"ELETROMECANICA", sistema:"Serviços auxiliares", categoria:"Grupo gerador",
+      material:"Carenagem metálica atenuada acusticamente",
+      especificacao:"GMG diesel 150 kVA, 380/220 V, carenagem 75 dB(A) a 1,5 m, partida automática",
+      norma:"ABNT NBR ISO 8528", qtd:1, un:"un"});
+
+    var tanque = new THREE.Group();
+    var tq2 = cil(0.9, 3.0, MT.laranja, 16); tq2.rotation.z = Math.PI/2; tq2.position.y=1.3; tanque.add(tq2);
+    [-1.1,1.1].forEach(function(sx){
+      var sela = caixa(0.35,0.9,1.6,MT.acoPint); sela.position.set(sx,0.45,0); tanque.add(sela);
+    });
+    var muret = caixa(4.4,0.5,2.8,MT.concretoEsc); muret.position.y=0.25; tanque.add(muret);
+    tanque.position.set(xA+4.0, 0.3, zA+4.5);
+    reg(tanque, {nome:"Tanque de diesel com bacia de contenção", tag:"AUX-TQ-01",
+      disciplina:"ELETROMECANICA", sistema:"Serviços auxiliares", categoria:"Tanque de combustível",
+      material:"Aço carbono com pintura de identificação de inflamável",
+      especificacao:"Tanque aéreo 2.500 L com bacia de contenção 110 %, respiro e indicador de nível",
+      norma:"ABNT NBR 17505", qtd:1, un:"un"});
+  }
+
+  /* ---- sinalização e segurança ---- */
+  if(P.sinal){
+    // faixa amarela de rota de circulação no pátio
+    var rota = new THREE.Group();
+    [[-1.4],[1.4]].forEach(function(off2){
+      var f2 = caixa(largTotal+4, 0.02, 0.18, MT.seguranca);
+      f2.position.set(0, 0.06, zBarra - 6.5 + off2[0]); rota.add(f2);
+    });
+    reg(rota, {nome:"Faixa de demarcação de rota de circulação", tag:"SEG-FX-01",
+      disciplina:"ELETROMECANICA", sistema:"Sinalização e segurança", categoria:"Sinalização horizontal",
+      material:"Tinta acrílica para piso, amarelo segurança",
+      especificacao:"Duas faixas de 0,15 m delimitando rota de circulação e fuga, largura útil 2,80 m",
+      norma:"ABNT NBR 7195 / NR‑26", qtd:+((largTotal+4)*2).toFixed(0), un:"m"});
+
+    // placas de advertência na cerca e junto aos equipamentos
+    var placas = new THREE.Group(), nPl = 0;
+    var cxp2 = largTotal/2 + 9, czp = prof/2 + 13;
+    for(var ang2=0; ang2<4; ang2++){
+      var passos = 4;
+      for(var pi=0; pi<passos; pi++){
+        var t2 = -0.75 + pi*0.5;
+        var px = ang2<2 ? t2*2*cxp2 : (ang2===2 ? -cxp2 : cxp2);
+        var pz = ang2<2 ? (ang2===0 ? -czp : czp) : t2*2*czp;
+        var pl2 = caixa(0.5,0.4,0.03,MT.placa);
+        pl2.position.set(px, 1.7, pz + (ang2<2?0.06:0));
+        if(ang2>=2) pl2.rotation.y = Math.PI/2;
+        placas.add(pl2);
+        var tarja = caixa(0.5,0.1,0.02,MT.preto);
+        tarja.position.set(px, 1.55, pz + (ang2<2?0.08:0));
+        if(ang2>=2) tarja.rotation.y = Math.PI/2;
+        placas.add(tarja); nPl++;
+      }
+    }
+    reg(placas, {nome:"Placas de advertência de risco elétrico", tag:"SEG-PL-01",
+      disciplina:"ELETROMECANICA", sistema:"Sinalização e segurança", categoria:"Sinalização vertical",
+      material:"Chapa de alumínio com película refletiva",
+      especificacao:"Placa 0,50 × 0,40 m — \"Perigo de morte: alta tensão\", fixada a cada 12 m no perímetro",
+      norma:"ABNT NBR 16179 / NR‑10", qtd:nPl, un:"un"});
+  }
+
+  /* ---- compensação reativa: bancos de capacitores e reator ---- */
+  var xExtra = x0 + (nBays + P.trafos) * passo;
+  for(var bc=0; bc<P.capacitores; bc++){
+    var xCap = xExtra + bc*passo, zCap = zBarra + 8;
+    laje(xCap, zCap, 8.0, 6.4, 0.3, "FD-BC"+(bc+1), "Base do banco de capacitores", "Fundação");
+    var banco = eqBancoCapacitores("BC"+String(bc+1).padStart(2,"0"), T.NBI>700?30:15);
+    banco.position.set(xCap, 0.3, zCap);
+    fases.forEach(function(off,i){
+      var cc = condutor(new THREE.Vector3(xCap+(i-1)*2.2, hB, zBar[0]+(i-1)*(T.dFF+0.6)),
+                        new THREE.Vector3(xCap-2.2+i*2.2, 4.35, zCap), 0.4, MT.aluminio, 0.032);
+      reg(cc, {nome:"Conexão barramento → banco de capacitores", tag:"CN-BC"+(bc+1)+"-"+letra[i],
+        disciplina:"ELETROMECANICA", sistema:"Compensação reativa", categoria:"Conexão aérea",
+        fase:letra[i], material:"Cabo de alumínio liga 1350",
+        especificacao:"Descida para o barramento do banco, com conectores bimetálicos",
+        norma:"ABNT NBR 5370", qtd:+cc.userData.comprimento.toFixed(2), un:"m"});
+    });
+  }
+  if(P.reator){
+    var xRe = xExtra + P.capacitores*passo, zRe = zBarra + 8;
+    laje(xRe, zRe, 7.0, 7.0, 0.4, "FD-RE01", "Base do reator de linha", "Fundação");
+    var re = eqReator(T, "RE01"); re.position.set(xRe, 0.4, zRe);
+    fases.forEach(function(off,i){
+      var cr = condutor(new THREE.Vector3(xRe+(i-1)*1.6, hB, zBar[0]+(i-1)*(T.dFF+0.6)),
+                        new THREE.Vector3(xRe+(i-1)*0.9, 4.3+T.altIso*1.1, zRe), 0.4, MT.aluminio, 0.032);
+      reg(cr, {nome:"Conexão barramento → reator", tag:"CN-RE01-"+letra[i],
+        disciplina:"ELETROMECANICA", sistema:"Compensação reativa", categoria:"Conexão aérea",
+        fase:letra[i], material:"Cabo de alumínio liga 1350",
+        especificacao:"Descida do barramento principal para as buchas do reator",
+        norma:"ABNT NBR 5370", qtd:+cr.userData.comprimento.toFixed(2), un:"m"});
+    });
+  }
+
+  /* ---- média tensão: cubículos e transformador de serviço auxiliar ---- */
+  if(P.cubiculos){
+    var xCub = largTotal/2 - 10, zCub = zBarra + 17;
+    var cub2 = eqCubiculos("MT-CUB-01", 8); cub2.position.set(xCub, 0, zCub);
+    laje(xCub, zCub, 12, 6, 0.3, "CIV-MT-BASE", "Base da casa de cubículos", "Fundação");
+  }
+  if(P.sfa){
+    var xSfa = largTotal/2 - 19, zSfa = zBarra + 17;
+    var sfa2 = eqTrafoAux("AUX-TSA-01"); sfa2.position.set(xSfa, 0, zSfa);
+    var mufla = new THREE.Group();
+    [-0.5,0,0.5].forEach(function(x5){
+      var mf = isolador(0.9,0.14,MT.polimero); mf.position.set(x5, 2.6, 0); mufla.add(mf);
+      var cbo = cil(0.05, 2.6, MT.preto, 8); cbo.position.set(x5, 1.3, 0); mufla.add(cbo);
+    });
+    var poste2 = cil(0.14, 8, MT.concretoEsc, 10); poste2.position.y = 4; mufla.add(poste2);
+    mufla.position.set(xSfa - 3.2, 0, zSfa);
+    reg(mufla, {nome:"Terminação de cabo isolado de 13,8 kV", tag:"MT-MUF-01",
+      disciplina:"ELETROMECANICA", sistema:"Média tensão", categoria:"Mufla terminal",
+      material:"Terminação polimérica termocontrátil",
+      especificacao:"Três muflas externas 15 kV para cabo EPR 185 mm², com poste de ancoragem de concreto",
+      norma:"ABNT NBR 7286", qtd:3, un:"un"});
+  }
+
+  /* ---- torre de linha de transmissão fora da cerca ---- */
+  if(P.torreLT && nBays > 0){
+    var zTorre = zLinha - 34, hTorre = hP + 12;
+    var torre = torreLinha(T, "LT-TR-01", hTorre, vf);
+    torre.position.set(x0 + passo*0.5, 0, zTorre);
+    fundacao(x0 + passo*0.5 - 2.7, zTorre - 2.7, 2.6, 1.4, "bloco", "FD-LTTR-01", "Fundação da torre de linha");
+    fundacao(x0 + passo*0.5 + 2.7, zTorre + 2.7, 2.6, 1.4, "bloco", "FD-LTTR-02", "Fundação da torre de linha");
+    // vãos de chegada até o pórtico de entrada do primeiro bay
+    var niveisT = [hTorre*0.74, hTorre*0.86, hTorre*0.98];
+    fases.forEach(function(off,i){
+      var origem = new THREE.Vector3(x0 + passo*0.5 + (i===1 ? vf*1.35/2 : -vf*1.15/2),
+                                     niveisT[i] - 1.4, zTorre);
+      var destino = new THREE.Vector3(x0 + off, hP - 0.8, zLinha);
+      var cl = condutor(origem, destino, 2.6, MT.acsr, 0.05);
+      reg(cl, {nome:"Vão de chegada da linha de transmissão", tag:"LT-VAO-"+letra[i],
+        disciplina:"ELETROMECANICA", sistema:"Linha de transmissão", categoria:"Condutor de vão",
+        fase:letra[i], material:"Cabo CAA (ACSR) Grosbeak 636 MCM",
+        especificacao:"Vão de chegada entre torre de suspensão e pórtico, flecha conforme NBR 5422",
+        norma:"ABNT NBR 5422", qtd:+cl.userData.comprimento.toFixed(1), un:"m"});
+    });
+    var cgT = condutor(new THREE.Vector3(x0 + passo*0.5, hTorre + 3.2, zTorre),
+                       new THREE.Vector3(x0 + passo*0.5, hP + 2.5, zLinha), 2.0, MT.acsr, 0.028);
+    reg(cgT, {nome:"Cabo para-raios do vão de chegada", tag:"LT-CG-01",
+      disciplina:"ELETROMECANICA", sistema:"Linha de transmissão", categoria:"Cabo de blindagem",
+      material:"Cabo de aço galvanizado 3/8\" / OPGW",
+      especificacao:"Cabo de blindagem do vão de chegada, podendo incorporar fibras ópticas (OPGW)",
+      norma:"ABNT NBR 5422 / NBR 5419", qtd:+cgT.userData.comprimento.toFixed(1), un:"m"});
+  }
+
+  /* ---- torre de telecomunicações ---- */
+  if(P.telecom){
+    var xTel = -largTotal/2 + 20, zTel = zBarra + 22;
+    var tt = torreTelecom("TEL-TR-01", 34); tt.position.set(xTel, 0, zTel);
+    fundacao(xTel, zTel, 3.2, 1.6, "bloco", "FD-TEL-01", "Fundação da torre de telecomunicações");
+  }
+
+  /* ---- CFTV perimetral ---- */
+  if(P.cftv){
+    var cxC = largTotal/2 + 8, czC = prof/2 + 12, nCam = 0, cams = new THREE.Group();
+    [[-cxC,-czC],[cxC,-czC],[cxC,czC],[-cxC,czC],[0,-czC],[0,czC]].forEach(function(p6){
+      var gcam = new THREE.Group();
+      var mastro2 = cil(0.09, 6, MT.galvan, 8); mastro2.position.y = 3; gcam.add(mastro2);
+      var braco2 = caixa(0.8,0.07,0.07,MT.galvan); braco2.position.set(0.4,5.9,0); gcam.add(braco2);
+      var corpo2 = caixa(0.42,0.2,0.2,MT.creme); corpo2.position.set(0.85,5.82,0); gcam.add(corpo2);
+      var lente = cil(0.09,0.1,MT.preto,10); lente.rotation.z = Math.PI/2;
+      lente.position.set(1.1,5.82,0); gcam.add(lente);
+      var ir = caixa(0.1,0.1,0.03,MT.advertencia); ir.position.set(1.07,5.94,0); gcam.add(ir);
+      gcam.position.set(p6[0], 0, p6[1]); cams.add(gcam); nCam++;
+    });
+    reg(cams, {nome:"Sistema de CFTV perimetral", tag:"SEG-CFTV-01",
+      disciplina:"ELETROMECANICA", sistema:"Segurança eletrônica", categoria:"Câmera de vigilância",
+      material:"Invólucro em alumínio IP66 sobre mastro galvanizado",
+      especificacao:nCam+" câmeras IP 4 MP com iluminador infravermelho, mastro de 6 m e gravação em NVR de 30 dias",
+      norma:"ABNT NBR 17240 (analogia) / NR‑10", qtd:nCam, un:"un"});
+  }
+
+  /* ---- guarita e portão de acesso ---- */
+  if(P.guarita){
+    var xG = -largTotal/2 + 4, zG = prof/2 + 13;
+    laje(xG, zG - 3, 5, 4, 0.25, "CIV-GUA-BASE", "Base da guarita", "Fundação");
+    var gua = new THREE.Group();
+    var corpoG = caixa(3.6,2.8,3.0,MT.creme); corpoG.position.y=1.65; gua.add(corpoG);
+    var rodG = caixa(3.65,0.45,3.05,MT.azulPainel); rodG.position.y=0.47; gua.add(rodG);
+    var cobG = caixa(4.2,0.22,3.6,MT.telhaAzul); cobG.position.y=3.15; gua.add(cobG);
+    var janG = caixa(2.4,1.1,0.08,MT.vidro); janG.position.set(0,2.0,-1.52); gua.add(janG);
+    var portaG = caixa(0.9,2.1,0.1,MT.laranja); portaG.position.set(1.3,1.3,1.52); gua.add(portaG);
+    gua.position.set(xG, 0.25, zG - 3);
+    reg(gua, {nome:"Guarita de controle de acesso", tag:"CIV-GUA-01", disciplina:"CIVIL",
+      sistema:"Edificação", categoria:"Edificação em alvenaria",
+      material:"Alvenaria com cobertura metálica e esquadrias de alumínio",
+      especificacao:"Guarita 3,60 × 3,00 m com sanitário, controle de acesso e ponto de CFTV",
+      norma:"ABNT NBR 9050 / NBR 6118", qtd:11, un:"m²"});
+
+    var pt2 = new THREE.Group();
+    var trilho = caixa(8.4,0.12,0.2,MT.galvanEsc); trilho.position.set(0,0.06,0); pt2.add(trilho);
+    var folha = caixa(7.0,2.4,0.1,MT.seguranca); folha.position.set(0.6,1.3,0); pt2.add(folha);
+    for(var vG=0; vG<9; vG++){
+      var barra2 = caixa(0.07,2.2,0.12,MT.galvan);
+      barra2.position.set(-2.6 + vG*0.8, 1.3, 0.08); pt2.add(barra2);
+    }
+    [-3.6,3.6].forEach(function(px2){
+      var colG = caixa(0.25,3.0,0.25,MT.galvan); colG.position.set(px2,1.5,0); pt2.add(colG);
+    });
+    pt2.position.set(xG + 6, 0, zG);
+    reg(pt2, {nome:"Portão de acesso ao pátio", tag:"CIV-PRT-01", disciplina:"CIVIL",
+      sistema:"Cerca e acessos", categoria:"Portão metálico",
+      material:"Perfil de aço galvanizado com pintura amarelo segurança",
+      especificacao:"Portão de correr 7,00 × 2,40 m motorizado, com travessia de malha de terra flexível",
+      norma:"ABNT NBR 15751 / NR‑10", qtd:1, un:"un"});
+  }
+
+  /* ---- reservatório de incêndio e casa de bombas ---- */
+  if(P.reservatorio && P.incendio){
+    var xR = largTotal/2 + 2, zR = prof/2 + 9;
+    laje(xR, zR, 9, 9, 0.4, "CIV-RES-BASE", "Base do reservatório de incêndio", "Fundação");
+    var res = new THREE.Group();
+    var casco = cil(3.4, 5.0, MT.advertencia, 22); casco.position.y=2.7; res.add(casco);
+    var tampaR = cil(3.45, 0.2, MT.galvanEsc, 22); tampaR.position.y=5.3; res.add(tampaR);
+    for(var aR=0; aR<10; aR++){
+      var esc2 = caixa(0.5,0.05,0.14,MT.seguranca);
+      esc2.position.set(3.35, 0.6+aR*0.47, 0); res.add(esc2);
+    }
+    var guardaR = new THREE.Mesh(new THREE.TorusGeometry(3.4,0.05,6,24), MT.seguranca);
+    guardaR.rotation.x = Math.PI/2; guardaR.position.y = 6.3; res.add(guardaR);
+    var saidaR = cil(0.12, 2.4, MT.advertencia, 10); saidaR.rotation.z = Math.PI/2;
+    saidaR.position.set(-4.0, 0.9, 0); res.add(saidaR);
+    res.position.set(xR, 0.4, zR);
+    reg(res, {nome:"Reservatório de água de combate a incêndio", tag:"INC-RES-01",
+      disciplina:"ELETROMECANICA", sistema:"Combate a incêndio", categoria:"Reservatório metálico",
+      material:"Chapa de aço com pintura epóxi vermelha",
+      especificacao:"Reservatório cilíndrico de 180 m³, reserva técnica de incêndio para 30 min de operação do anel",
+      norma:"ABNT NBR 13714 / NBR 12693", qtd:1, un:"un"});
+
+    var bomb = new THREE.Group();
+    var casaB = caixa(5.0,2.8,4.0,MT.creme); casaB.position.y=1.6; bomb.add(casaB);
+    var cobB = caixa(5.4,0.22,4.4,MT.telhaAzul); cobB.position.y=3.1; bomb.add(cobB);
+    var portaB = caixa(1.6,2.1,0.1,MT.laranja); portaB.position.set(0,1.25,-2.02); bomb.add(portaB);
+    [[-1.0,0.5],[1.0,0.5]].forEach(function(bp){
+      var mot = cil(0.42,1.1,MT.advertencia,12); mot.rotation.z=Math.PI/2;
+      mot.position.set(bp[0],0.85,1.0); bomb.add(mot);
+    });
+    bomb.position.set(xR - 7.5, 0.4, zR);
+    reg(bomb, {nome:"Casa de bombas de incêndio", tag:"INC-BMB-01",
+      disciplina:"ELETROMECANICA", sistema:"Combate a incêndio", categoria:"Conjunto motobomba",
+      material:"Bombas centrífugas com motor elétrico e motor diesel de retaguarda",
+      especificacao:"Bomba principal elétrica e bomba de retaguarda a diesel, 100 m³/h a 80 mca, com jockey de pressurização",
+      norma:"ABNT NBR 13714", qtd:1, un:"cj"});
+  }
+
+  /* ---- caixa separadora água/óleo ---- */
+  if(P.separadora && P.trafos > 0){
+    var xS = x0 + nBays*passo + 8, zS = zBarra + 15;
+    var sep2 = new THREE.Group();
+    var cxS = caixa(4.0,2.2,2.6,MT.concretoEsc); cxS.position.y=-1.0; sep2.add(cxS);
+    var tampaS = caixa(4.2,0.15,2.8,MT.concreto); tampaS.position.y=0.08; sep2.add(tampaS);
+    [-1.2,0,1.2].forEach(function(tx){
+      var visita = cil(0.4,0.12,MT.galvanEsc,12); visita.position.set(tx,0.2,0); sep2.add(visita);
+    });
+    var tuboS = cil(0.1, 6.0, MT.pvc, 10); tuboS.rotation.z = Math.PI/2;
+    tuboS.position.set(-5.0,-0.6,0); sep2.add(tuboS);
+    sep2.position.set(xS, 0, zS);
+    reg(sep2, {nome:"Caixa separadora água/óleo", tag:"CIV-SAO-01", disciplina:"CIVIL",
+      sistema:"Drenagem", categoria:"Sistema separador",
+      material:"Concreto armado impermeabilizado com elementos internos em aço inox",
+      especificacao:"Separador de 4 câmaras, vazão 12 m³/h, atendendo à drenagem das bacias de contenção",
+      norma:"ABNT NBR 13231 / CONAMA 430", qtd:+(4.0*2.2*2.6).toFixed(2), un:"m³",
+      aco:Math.round(4.0*2.2*2.6*85), fck:P.fck});
+  }
+
+  /* ---- iluminação do pátio ---- */
+  if(P.iluminacao){
+    var nP = Math.max(4, Math.round(largTotal/16)*2);
+    for(var p2=0; p2<nP; p2++){
+      var lado = p2 < nP/2 ? -1 : 1;
+      var xp = -largTotal/2 + ((p2%(nP/2))+0.5)*(largTotal/(nP/2));
+      var g3 = new THREE.Group();
+      var poste = cil(0.13, 12, MT.galvan, 10); poste.position.y=6; g3.add(poste);
+      var faixaP = cil(0.15, 1.1, MT.seguranca, 10); faixaP.position.y=0.65; g3.add(faixaP);
+      var braco = caixa(1.6,0.12,0.12,MT.galvan); braco.position.set(0.8,12,0); g3.add(braco);
+      var lum = caixa(0.7,0.18,0.35,MT.lamp); lum.position.set(1.5,11.9,0); g3.add(lum);
+      g3.position.set(xp, 0, lado*(prof/2+4));
+      reg(g3, {nome:"Poste de iluminação do pátio", tag:"ILU-P"+String(p2+1).padStart(2,"0"),
+        disciplina:"ELETROMECANICA", sistema:"Iluminação", categoria:"Poste de iluminação",
+        material:"Aço galvanizado a fogo",
+        especificacao:"Poste cônico contínuo 12 m com projetor LED 240 W, IP66, alimentação 220 Vca",
+        norma:"ABNT NBR 5101 / NBR 14744", qtd:1, un:"un"});
+      fundacao(xp, lado*(prof/2+4), 1.2, 1.5, "sapata", "FD-ILU-"+(p2+1), "Fundação de poste de iluminação");
+    }
+  }
+
+  /* ---- cerca patrimonial ---- */
+  if(P.cerca){
+    var cx = largTotal/2 + 9, cz = prof/2 + 13, pc = 3, gC = new THREE.Group(), extensao = 0;
+    function linhaCerca(x1,z1,x2,z2){
+      var dx=x2-x1, dz=z2-z1, comp=Math.hypot(dx,dz), n=Math.round(comp/pc);
+      extensao += comp;
+      for(var i2=0;i2<=n;i2++){
+        var post = caixa(0.1,2.6,0.1,MT.cerca);
+        post.position.set(x1+dx*i2/n, 1.3, z1+dz*i2/n); gC.add(post);
+      }
+      [0.6,1.3,2.0,2.5].forEach(function(y){
+        var fio = caixa(comp,0.035,0.035,MT.cerca);
+        fio.position.set((x1+x2)/2, y, (z1+z2)/2);
+        fio.rotation.y = Math.atan2(dx,dz)+Math.PI/2; gC.add(fio);
+      });
+    }
+    linhaCerca(-cx,-cz,cx,-cz); linhaCerca(-cx,cz,cx,cz);
+    linhaCerca(-cx,-cz,-cx,cz); linhaCerca(cx,-cz,cx,cz);
+    reg(gC, {nome:"Cerca patrimonial", tag:"CIV-CRC-01", disciplina:"CIVIL",
+      sistema:"Cerca e acessos", categoria:"Fechamento perimetral",
+      material:"Tela de aço galvanizado com montantes tubulares",
+      especificacao:"Cerca h = 2,60 m com 3 fios de arame farpado inclinados e portão de acesso 6,00 m",
+      norma:"ABNT NBR 10126 / NR‑10", qtd:+extensao.toFixed(0), un:"m"});
+  }
+
+  /* ---- cotas ---- */
+  if(P.cotas){
+    var cotas = [
+      ["Vão entre fases  "+vf.toFixed(2)+" m", new THREE.Vector3(x0-passo*0.5, 1.6, zLinha+20)],
+      ["Altura do barramento  "+hB.toFixed(2)+" m", new THREE.Vector3(0, hB+1.2, zBarra-1)],
+      ["Altura do pórtico  "+hP.toFixed(2)+" m", new THREE.Vector3(x0-largPort/2-2, hP+1.4, zLinha)],
+      ["Distância mínima fase‑terra  "+T.dFT.toFixed(2)+" m", new THREE.Vector3(x0, P.hSuporte+0.8, zLinha+10)],
+      ["Espaçamento entre bays  "+passo.toFixed(1)+" m", new THREE.Vector3(x0+passo/2, 0.9, zLinha+26)]
+    ];
+    cotas.forEach(function(c){ var s = rotulo(c[0], "#00A1D4"); s.position.copy(c[1]); anotacoes.add(s); });
+  }
+
+  aplicarModo(); aplicarVisibilidade(); aplicarExplosao(); aplicarCorte();
+  atualizarArvore(); atualizarLM(); atualizarNormas();
+  document.querySelector("#p-elem b").textContent = OBJS.length.toLocaleString("pt-BR");
+  anotacoes.visible = P.cotas || P.eixos || P.tags;
+  sol.castShadow = P.sombra;
+}
+
+/* =====================================================================
+   7. LISTA DE MATERIAIS
+   ===================================================================== */
+function coletar(escopo){
+  var fonte = escopo === "SELECAO"
+    ? (selecionado ? [selecionado] : [])
+    : OBJS.filter(function(o){
+        return escopo === "TODOS" || o.userData.meta.disciplina === escopo; });
+
+  var mapa = {}, ordem = [];
+  fonte.forEach(function(o){
+    var m = o.userData.meta;
+    var chave = [m.disciplina, m.sistema, m.nome, m.especificacao, m.un].join("|");
+    if(!mapa[chave]){
+      mapa[chave] = {disciplina:m.disciplina, sistema:m.sistema, nome:m.nome,
+        especificacao:m.especificacao, norma:m.norma, material:m.material,
+        un:m.un, qtd:0, elementos:0, aco:0, massa:0};
+      ordem.push(chave);
+    }
+    var r = mapa[chave];
+    r.qtd += (m.qtd||0); r.elementos++;
+    r.aco += (m.aco||0); r.massa += (m.massa||0);
+  });
+  var lista = ordem.map(function(k){ return mapa[k]; });
+  lista.sort(function(a,b){
+    if(a.disciplina !== b.disciplina) return a.disciplina==="CIVIL" ? -1 : 1;
+    if(a.sistema !== b.sistema) return a.sistema.localeCompare(b.sistema,"pt-BR");
+    return a.nome.localeCompare(b.nome,"pt-BR");
+  });
+  return lista;
+}
+
+function num(v, dec){
+  return Number(v).toLocaleString("pt-BR",{minimumFractionDigits:dec===undefined?2:dec,
+    maximumFractionDigits:dec===undefined?2:dec});
+}
+
+var escopoLM = "TODOS";
+function atualizarLM(){
+  var lista = coletar(escopoLM);
+  var tb = document.querySelector("#tab-lm tbody"); tb.innerHTML = "";
+  var sisAtual = null, item = 0;
+  lista.forEach(function(r){
+    if(r.sistema !== sisAtual){
+      sisAtual = r.sistema;
+      var tr0 = document.createElement("tr"); tr0.className = "grupo-lin";
+      var td0 = document.createElement("td"); td0.colSpan = 4;
+      td0.textContent = (r.disciplina==="CIVIL"?"CIVIL · ":"ELETROMECÂNICA · ") + r.sistema;
+      tr0.appendChild(td0); tb.appendChild(tr0);
+    }
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>"+(++item)+"</td><td><b style='font-weight:500'>"+r.nome+
+      "</b><br><span style='color:var(--txt-3);font-size:10.3px'>"+r.especificacao+"</span></td>"+
+      "<td class='n'>"+num(r.qtd, r.un==="un"?0:2)+"</td><td>"+r.un+"</td>";
+    tb.appendChild(tr);
+  });
+  if(!lista.length){
+    tb.innerHTML = "<tr><td colspan='4' style='color:var(--txt-3);padding:14px 4px'>"+
+      (escopoLM==="SELECAO" ? "Selecione um elemento no modelo para listar seus materiais."
+                            : "Nenhum elemento neste escopo.")+"</td></tr>";
+  }
+
+  // KPIs consolidados
+  var tudo = coletar("TODOS"), K = {concreto:0, aco:0, armadura:0, equip:0, cabo:0, eletroduto:0, cobre:0, brita:0};
+  tudo.forEach(function(r){
+    if(r.un==="m³" && /Concreto|Fundação|Contenção|Canaleta/.test(r.categoria||r.sistema+r.nome)) K.concreto += r.qtd;
+    if(r.sistema==="Fundação" || r.sistema==="Concreto") { K.concreto += 0; }
+    if(r.un==="kg") K.aco += r.qtd;
+    K.armadura += r.aco||0;
+    if(r.sistema==="Equipamento de pátio") K.equip += r.qtd;
+    if(r.sistema==="Barramento e conexões" && r.un==="m") K.cabo += r.qtd;
+    if(r.sistema==="Eletrodutos" && r.un==="m") K.eletroduto += r.qtd;
+    if(r.sistema==="Aterramento" && r.un==="m") K.cobre += r.qtd;
+  });
+  // concreto: soma direta das linhas em m³ das disciplinas civis
+  K.concreto = tudo.filter(function(r){ return r.disciplina==="CIVIL" && r.un==="m³"
+    && r.sistema!=="Pavimentação"; }).reduce(function(s,r){ return s+r.qtd; },0);
+  K.brita = tudo.filter(function(r){ return r.sistema==="Pavimentação" && r.un==="m³"; })
+    .reduce(function(s,r){ return s+r.qtd; },0);
+
+  document.getElementById("kpis").innerHTML = [
+    ["<span style='color:var(--g-azul)'>"+num(K.concreto,1)+"</span>","m³ de concreto estrutural"],
+    ["<span style='color:var(--g-amarelo)'>"+num(K.aco/1000,1)+"</span>","t de aço estrutural galvanizado"],
+    ["<span style='color:var(--g-cinza)'>"+num(K.armadura/1000,1)+"</span>","t de armadura CA‑50 (85 kgf/m³)"],
+    ["<span style='color:var(--g-laranja)'>"+num(K.equip,0)+"</span>","equipamentos de pátio"],
+    ["<span style='color:var(--g-verde)'>"+num(K.cobre,0)+"</span>","m de cobre nu de aterramento"],
+    ["<span style='color:var(--g-vermelho)'>"+num(K.eletroduto,0)+"</span>","m de eletroduto enterrado"]
+  ].map(function(k){
+    return "<div class='kpi'><div class='kpi-num'>"+k[0]+"</div><div class='kpi-rot'>"+k[1]+"</div></div>";
+  }).join("");
+}
+
+function csvLM(escopo){
+  var lista = coletar(escopo), T = TENSOES[P.tensao];
+  var cab = ["ITEM","DISCIPLINA","SISTEMA","CATEGORIA","DESCRICAO","ESPECIFICACAO",
+             "MATERIAL","NORMA","QTD","UN","ELEMENTOS","ARMADURA_KG"];
+  var linhas = [
+    "LISTA DE MATERIAIS - MODELO PARAMETRICO DE SUBESTACAO",
+    "CONSAG ENGENHARIA;Tensao nominal;"+P.tensao+" kV;Arranjo;"+P.arranjo+
+      ";Bays;"+P.bays+";Transformadores;"+P.trafos+";Emissao;"+new Date().toLocaleString("pt-BR"),
+    "", cab.join(";")
+  ];
+  lista.forEach(function(r,i){
+    linhas.push([i+1, r.disciplina, r.sistema, r.categoria||"", r.nome, r.especificacao,
+      r.material||"", r.norma||"", num(r.qtd, r.un==="un"?0:2), r.un, r.elementos,
+      r.aco?num(r.aco,0):""].map(function(c){
+        return String(c).replace(/;/g,","); }).join(";"));
+  });
+  return "\uFEFF" + linhas.join("\r\n");
+}
+
+async function baixar(nome, conteudo, tipo){
+  try{
+    var dl = window.claude && await window.claude.use("downloads");
+    if(dl){ await dl.save({filename:nome, data:conteudo}); avisar("Arquivo gerado: "+nome); return; }
+  }catch(e){ /* segue para o fallback local */ }
+  try{
+    var blob = new Blob([conteudo], {type:tipo});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    avisar("Arquivo gerado: "+nome);
+  }catch(e2){ avisar("Não foi possível gerar o arquivo neste ambiente."); }
+}
+
+/* =====================================================================
+   8. VERIFICAÇÕES NORMATIVAS
+   ===================================================================== */
+function atualizarNormas(){
+  var T = TENSOES[P.tensao], el = document.getElementById("verificacoes");
+  var hMinCirc = 2.25 + T.dFT;          // partes energizadas sobre área de circulação
+  var hMinVia  = 4.50 + T.dFT;          // sobre via de veículos
+  var hVivo    = P.hSuporte + 0.45;      // base da parte energizada mais baixa
+  var vaoMin   = T.dFF + 0.6;
+  var checks = [
+    {t:"Distância entre fases", ok:P.vaoFase >= vaoMin, tol:P.vaoFase >= vaoMin*0.92,
+     v:P.vaoFase.toFixed(2)+" m", ref:"mínimo "+vaoMin.toFixed(2)+" m",
+     d:"Distância fase‑fase de "+T.dFF.toFixed(2)+" m acrescida da folga construtiva, para NBI de "+T.NBI+" kV."},
+    {t:"Altura de partes energizadas", ok:hVivo >= hMinCirc, tol:hVivo >= hMinCirc*0.93,
+     v:hVivo.toFixed(2)+" m", ref:"mínimo "+hMinCirc.toFixed(2)+" m",
+     d:"Altura livre sobre área de circulação de pessoal: 2,25 m + distância fase‑terra."},
+    {t:"Altura do barramento principal", ok:P.hBarra >= hMinVia, tol:P.hBarra >= hMinCirc,
+     v:P.hBarra.toFixed(2)+" m", ref:"recomendado "+hMinVia.toFixed(2)+" m",
+     d:"Travessia sobre via interna de veículos: 4,50 m + distância fase‑terra."},
+    {t:"Gabarito do pórtico de linha", ok:P.hPortico >= P.hBarra + 3, tol:P.hPortico >= P.hBarra + 1.5,
+     v:P.hPortico.toFixed(2)+" m", ref:"≥ barramento + 3,00 m",
+     d:"Folga para flecha do condutor de entrada e para o cabo guarda de blindagem."},
+    {t:"Corredor entre bays", ok:P.passoBay >= P.vaoFase*2 + 5, tol:P.passoBay >= P.vaoFase*2 + 3,
+     v:P.passoBay.toFixed(1)+" m", ref:"≥ "+(P.vaoFase*2+5).toFixed(1)+" m",
+     d:"Faixa livre para manutenção, caminhão‑guindaste e acesso de emergência (NR‑10)."},
+    {t:"Módulo da malha de terra", ok:P.moduloMalha <= 5, tol:P.moduloMalha <= 6.5,
+     v:P.moduloMalha.toFixed(1)+" m", ref:"usual 3 a 5 m",
+     d:"Módulos maiores elevam as tensões de passo e toque; requer verificação por IEEE 80 / NBR 15751."},
+    {t:"Fundação do pórtico", ok:P.ladoSap >= P.hPortico*0.2, tol:P.ladoSap >= P.hPortico*0.16,
+     v:P.ladoSap.toFixed(2)+" m", ref:"≈ 20 % da altura",
+     d:"Pré‑dimensionamento de sapata para tombamento; o projeto exige sondagem SPT e verificação por NBR 6122."},
+    {t:"Blindagem contra descargas", ok:P.spda, tol:P.spda,
+     v:P.spda?"prevista":"ausente", ref:"obrigatória",
+     d:"Cabo guarda e mastros captores pelo método da esfera rolante, raio de 45 m (NBR 5419‑3)."},
+    {t:"Contenção de óleo isolante", ok:(P.trafos===0 || P.bacia), tol:(P.trafos===0 || P.bacia),
+     v:P.trafos===0?"não aplicável":(P.bacia?"prevista":"ausente"), ref:"obrigatória acima de 600 L",
+     d:"Bacia com brita de extinção e caixa separadora água/óleo para transformadores com óleo mineral."}
+  ];
+  el.innerHTML = checks.map(function(c){
+    var cor = c.ok ? "var(--g-verde)" : c.tol ? "var(--g-amarelo)" : "var(--g-vermelho)";
+    var st = c.ok ? "Conforme" : c.tol ? "Limítrofe" : "Não conforme";
+    return "<div class='verif'><span class='sel' style='background:"+cor+"'></span><div>"+
+      "<b>"+c.t+" — <span style='color:"+cor+"'>"+st+"</span></b>"+
+      "<small><span class='num'>"+c.v+"</span> · "+c.ref+"</small>"+
+      "<small style='margin-top:3px'>"+c.d+"</small></div></div>";
+  }).join("");
+
+  var dados = TENSOES[P.tensao];
+  document.getElementById("n-tensao").textContent =
+    "NBI "+dados.NBI+" kV · fase‑terra "+dados.dFT.toFixed(2)+" m · fase‑fase "+
+    dados.dFF.toFixed(2)+" m · barramento "+dados.corrente+" A.";
+  document.getElementById("n-fase").textContent =
+    "Mínimo normativo para esta tensão: "+(dados.dFF+0.6).toFixed(2)+" m.";
+  document.getElementById("n-suporte").textContent =
+    "Altura mínima de partes energizadas sobre circulação: "+(2.25+dados.dFT).toFixed(2)+" m.";
+}
+
+/* =====================================================================
+   9. MODOS DE VISUALIZAÇÃO, VISIBILIDADE, CORTE E EXPLOSÃO
+   ===================================================================== */
+var planoCorte = new THREE.Plane(new THREE.Vector3(0,0,-1), 1000);
+var materiaisModo = {};
+
+function aplicarModo(){
+  limparFantasmas();
+  raiz.traverse(function(n){
+    if(n.userData) { delete n.userData.matAntes; delete n.userData.matPre; }
+    if(!n.isMesh && !n.isLine && !n.isLineSegments) return;
+    var dono = n.userData.dono || n.parent;
+    while(dono && !dono.userData.meta) dono = dono.parent;
+    if(!dono) return;
+    var m = dono.userData.meta;
+    if(!n.userData.matReal) n.userData.matReal = n.material;
+    var base = n.userData.matReal;
+
+    if(modo === "real"){ n.material = base; }
+    else if(modo === "wire"){
+      n.material = obterMat("wire", 0x9fb6d0, {wireframe:true, transparent:true, opacity:.55});
+    }
+    else if(modo === "raiox"){
+      n.material = obterMat("x"+m.disciplina, COR_DISC[m.disciplina],
+        {transparent:true, opacity:.24, depthWrite:false, side:THREE.DoubleSide});
+    }
+    else if(modo === "mono"){
+      n.material = obterMat("mono", 0xb9bec4, {roughness:.85, metalness:.1});
+    }
+    else if(modo === "disciplina"){
+      n.material = obterMat("d"+m.disciplina, COR_DISC[m.disciplina], {roughness:.6, metalness:.15});
+    }
+    else if(modo === "sistema"){
+      var cor = COR_SIST[m.sistema] || 0xB3B3B3;
+      n.material = obterMat("s"+m.sistema, cor, {roughness:.6, metalness:.15});
+    }
+  });
+  if(selecionado) realcar(selecionado, true);
+  aplicarVisibilidade();
+}
+function obterMat(chave, cor, extra){
+  if(!materiaisModo[chave]){
+    materiaisModo[chave] = new THREE.MeshStandardMaterial(
+      Object.assign({color:cor, roughness:.7, metalness:.1}, extra||{}));
+    materiaisModo[chave].clippingPlanes = corte < 100 ? [planoCorte] : null;
+  }
+  return materiaisModo[chave];
+}
+
+var ocultos = {};        // sistemas desligados na árvore
+var isolado = null;      // elemento em destaque
+var modoIsolar = "fantasma";  // "fantasma" = demais translúcidos · "ocultar" = demais invisíveis
+
+// Deixa o elemento translúcido, preservando a silhueta do conjunto como
+// contexto enquanto o item isolado permanece com o material real.
+function aplicarFantasma(obj, on){
+  if(!!obj.userData.fantasma === !!on) return;
+  obj.userData.fantasma = on;
+  obj.traverse(function(n){
+    if(!n.isMesh && !n.isLine && !n.isLineSegments) return;
+    if(on){
+      if(!n.userData.matPre) n.userData.matPre = n.material;
+      n.material = n.isMesh
+        ? obterMat("fantasma", 0x8fa8c6, {transparent:true, opacity:0.10, depthWrite:false,
+            roughness:.9, metalness:0, side:THREE.DoubleSide})
+        : obterMat("fantasmaLinha", 0x8fa8c6, {transparent:true, opacity:0.12, depthWrite:false});
+      n.userData.sombraPre = n.castShadow;
+      n.castShadow = false;
+    } else if(n.userData.matPre){
+      n.material = n.userData.matPre; delete n.userData.matPre;
+      if(n.userData.sombraPre !== undefined) n.castShadow = n.userData.sombraPre;
+    }
+  });
+}
+function limparFantasmas(){
+  OBJS.forEach(function(o){ aplicarFantasma(o, false); });
+}
+
+function aplicarVisibilidade(){
+  OBJS.forEach(function(o){
+    var m = o.userData.meta;
+    var vis = !ocultos[m.disciplina] && !ocultos[m.disciplina+"|"+m.sistema] && !o.userData.escondido;
+    var fantasma = false;
+    if(isolado && o !== isolado){
+      if(modoIsolar === "ocultar") vis = false;
+      else fantasma = vis;
+    }
+    o.visible = vis;
+    aplicarFantasma(o, fantasma);
+  });
+  var b = document.getElementById("b-tudo");
+  if(b) b.textContent = isolado ? "Sair do isolamento" : "Mostrar tudo";
+}
+
+// Aproxima a câmera do elemento, mantendo a orientação atual da órbita.
+function focar(obj){
+  if(!obj) return;
+  var cx = new THREE.Box3().setFromObject(obj);
+  if(cx.isEmpty()) return;
+  var centro = cx.getCenter(new THREE.Vector3());
+  var tam = cx.getSize(new THREE.Vector3());
+  alvo.copy(centro);
+  orb.raio = Math.max(6, Math.max(tam.x, tam.y, tam.z) * 2.8);
+  orb.phi = Math.min(1.35, Math.max(0.55, orb.phi));
+  posicionar();
+}
+function aplicarExplosao(){
+  var f = explode/100;
+  OBJS.forEach(function(o){
+    var rank = ordemExplosao[o.userData.meta.sistema];
+    if(rank === undefined) rank = 1;
+    o.position.copy(o.userData.pos0);
+    o.position.y += rank * 7 * f;
+  });
+}
+function aplicarCorte(){
+  var T = P.profBay;
+  var lim = -T/2 - 12 + (corte/100) * (T + 40);
+  planoCorte.constant = lim;
+  var ativo = corte < 100;
+  var todos = [];
+  Object.keys(MT).forEach(function(k){ todos.push(MT[k]); });
+  Object.keys(materiaisModo).forEach(function(k){ todos.push(materiaisModo[k]); });
+  raiz.traverse(function(n){ if(n.material && todos.indexOf(n.material)<0) todos.push(n.material); });
+  todos.forEach(function(mm){ if(mm){ mm.clippingPlanes = ativo ? [planoCorte] : null; mm.needsUpdate = true; } });
+  document.getElementById("v-corte").textContent = ativo ? lim.toFixed(1)+" m" : "desligado";
+}
+
+function atualizarArvore(){
+  var estrut = {};
+  OBJS.forEach(function(o){
+    var m = o.userData.meta;
+    estrut[m.disciplina] = estrut[m.disciplina] || {};
+    estrut[m.disciplina][m.sistema] = (estrut[m.disciplina][m.sistema]||0) + 1;
+  });
+  var el = document.getElementById("arvore"); el.innerHTML = "";
+  ["CIVIL","ELETROMECANICA"].forEach(function(d){
+    if(!estrut[d]) return;
+    var rotD = d==="CIVIL" ? "Civil" : "Eletromecânica";
+    var totalD = Object.keys(estrut[d]).reduce(function(s,k){ return s+estrut[d][k]; },0);
+    var l1 = document.createElement("label"); l1.className = "chk";
+    l1.innerHTML = "<input type='checkbox' checked><span class='pt' style='background:#"+
+      COR_DISC[d].toString(16).padStart(6,"0")+"'></span><span style='font-weight:500'>"+rotD+
+      "</span><span class='qt'>"+totalD+"</span>";
+    l1.querySelector("input").addEventListener("change", function(e){
+      ocultos[d] = !e.target.checked;
+      el.querySelectorAll("[data-disc='"+d+"'] input").forEach(function(i){ i.checked = e.target.checked; });
+      Object.keys(estrut[d]).forEach(function(s){ ocultos[d+"|"+s] = !e.target.checked; });
+      aplicarVisibilidade();
+    });
+    el.appendChild(l1);
+    Object.keys(estrut[d]).sort().forEach(function(s){
+      var l2 = document.createElement("label");
+      l2.className = "chk sub"; l2.setAttribute("data-disc", d);
+      l2.innerHTML = "<input type='checkbox' "+(ocultos[d+"|"+s]?"":"checked")+
+        "><span class='pt' style='background:#"+((COR_SIST[s]||0xB3B3B3).toString(16).padStart(6,"0"))+
+        "'></span><span style='color:var(--txt-2)'>"+s+"</span><span class='qt'>"+estrut[d][s]+"</span>";
+      l2.querySelector("input").addEventListener("change", function(e){
+        ocultos[d+"|"+s] = !e.target.checked; aplicarVisibilidade();
+      });
+      el.appendChild(l2);
+    });
+  });
+}
+
+/* =====================================================================
+   10. SELEÇÃO E PROPRIEDADES
+   ===================================================================== */
+var selecionado = null, realce = null;
+var raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+
+var caixaSel = null;
+// O realce preserva o material real do elemento e acrescenta brilho sutil
+// mais um contorno em azul CONSAG — o item continua reconhecível.
+function realcar(obj, on){
+  obj.traverse(function(n){
+    if(!n.isMesh) return;
+    if(on){
+      if(!n.userData.matAntes){
+        n.userData.matAntes = n.material;
+        var c = n.material.clone();
+        c.emissive = new THREE.Color(0x2a5cb4);
+        c.emissiveIntensity = 0.42;
+        n.material = c;
+      }
+    } else if(n.userData.matAntes){
+      if(n.material !== n.userData.matAntes) n.material.dispose();
+      n.material = n.userData.matAntes; delete n.userData.matAntes;
+    }
+  });
+  if(caixaSel){ cena.remove(caixaSel); caixaSel.geometry.dispose(); caixaSel = null; }
+  if(on){
+    var cx = new THREE.Box3().setFromObject(obj);
+    if(!cx.isEmpty()){
+      cx.expandByScalar(0.25);
+      caixaSel = new THREE.Box3Helper(cx, new THREE.Color(0x3074F6));
+      caixaSel.material.depthTest = false;
+      caixaSel.material.transparent = true;
+      caixaSel.material.opacity = 0.9;
+      caixaSel.renderOrder = 999;
+      cena.add(caixaSel);
+    }
+  }
+}
+
+function selecionar(obj){
+  if(selecionado) realcar(selecionado, false);
+  selecionado = obj;
+  var cxp = document.getElementById("props");
+  if(!obj){ cxp.classList.remove("aberto");
+    document.getElementById("p-sel").textContent = "Nenhuma seleção";
+    document.getElementById("migalha").innerHTML = "";
+    if(escopoLM==="SELECAO") atualizarLM(); return; }
+  realcar(obj, true);
+  var m = obj.userData.meta;
+  document.getElementById("pr-nome").textContent = m.nome;
+  document.getElementById("pr-tag").textContent = m.tag + "  ·  " + m.id;
+  var linhas = [
+    ["Disciplina", m.disciplina==="CIVIL"?"Civil":"Eletromecânica"],
+    ["Sistema", m.sistema], ["Categoria", m.categoria],
+    ["Fase", m.fase], ["Material", m.material],
+    ["Especificação", m.especificacao],
+    ["Quantidade", num(m.qtd, m.un==="un"?0:2)+" "+m.un],
+    ["Armadura", m.aco ? num(m.aco,0)+" kg (CA‑50)" : null],
+    ["fck", m.fck ? "C"+m.fck+" — "+m.fck+" MPa" : null],
+    ["Massa", m.massa ? num(m.massa,0)+" kg" : null],
+    ["Dutos", m.dutos ? m.dutos+" × Ø 100 mm" : null],
+    ["Conexões", m.conexoes ? num(m.conexoes,0)+" un exotérmicas" : null],
+    ["Parafusos", m.parafusos ? num(m.parafusos,0)+" kg" : null],
+    ["Norma", m.norma]
+  ];
+  document.getElementById("pr-corpo").innerHTML = linhas.filter(function(l){ return l[1]; })
+    .map(function(l){ return "<div class='prop'><dt>"+l[0]+"</dt><dd>"+l[1]+"</dd></div>"; }).join("");
+  cxp.classList.add("aberto");
+  document.getElementById("p-sel").innerHTML = "Selecionado: <b>"+m.tag+"</b>";
+  document.getElementById("migalha").innerHTML =
+    (m.disciplina==="CIVIL"?"Civil":"Eletromecânica") + "<i>›</i>" + m.sistema +
+    "<i>›</i>" + m.categoria + "<i>›</i><b>" + m.nome + "</b>";
+  if(escopoLM==="SELECAO") atualizarLM();
+}
+
+/* =====================================================================
+   11. CÂMERA ORBITAL
+   ===================================================================== */
+var alvo = new THREE.Vector3(0, 5, 0);
+var orb = {raio:120, theta:0.8, phi:1.05};
+var arrastando = null, ini = {}, moveu = 0;
+
+function posicionar(){
+  var p = new THREE.Vector3(
+    alvo.x + orb.raio*Math.sin(orb.phi)*Math.sin(orb.theta),
+    alvo.y + orb.raio*Math.cos(orb.phi),
+    alvo.z + orb.raio*Math.sin(orb.phi)*Math.cos(orb.theta));
+  cam.position.copy(p); cam.lookAt(alvo);
+  if(cam === camO){
+    var esc = orb.raio*0.5, asp = palco.clientWidth/palco.clientHeight;
+    camO.left=-esc*asp; camO.right=esc*asp; camO.top=esc; camO.bottom=-esc;
+    camO.updateProjectionMatrix();
+  }
+}
+var cv = rend.domElement;
+cv.addEventListener("pointerdown", function(e){
+  cv.setPointerCapture(e.pointerId); moveu = 0;
+  arrastando = (e.button===2 || e.shiftKey) ? "pan" : "orbit";
+  ini = {x:e.clientX, y:e.clientY, th:orb.theta, ph:orb.phi, alvo:alvo.clone()};
+});
+cv.addEventListener("pointermove", function(e){
+  if(!arrastando) return;
+  var dx = e.clientX-ini.x, dy = e.clientY-ini.y;
+  moveu = Math.max(moveu, Math.abs(dx)+Math.abs(dy));
+  if(arrastando === "orbit"){
+    orb.theta = ini.th - dx*0.006;
+    orb.phi = Math.min(1.556, Math.max(0.06, ini.ph - dy*0.005));
+  } else {
+    var k = orb.raio*0.0013;
+    var dir = new THREE.Vector3().subVectors(cam.position, alvo).setY(0).normalize();
+    var lat = new THREE.Vector3(-dir.z,0,dir.x);
+    alvo.copy(ini.alvo).addScaledVector(lat, -dx*k).addScaledVector(dir, -dy*k);
+  }
+  posicionar();
+});
+["pointerup","pointercancel"].forEach(function(ev){
+  cv.addEventListener(ev, function(e){
+    if(arrastando === "orbit" && moveu < 6) clicar(e);
+    arrastando = null;
+  });
+});
+cv.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+cv.addEventListener("wheel", function(e){
+  e.preventDefault();
+  orb.raio = Math.min(420, Math.max(8, orb.raio*(1+Math.sign(e.deltaY)*0.09)));
+  posicionar();
+}, {passive:false});
+
+var dIni = 0, rIni = 0;
+cv.addEventListener("touchstart", function(e){
+  if(e.touches.length===2){ arrastando=null;
+    dIni = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    rIni = orb.raio; }
+}, {passive:true});
+cv.addEventListener("touchmove", function(e){
+  if(e.touches.length===2 && dIni){
+    var d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    orb.raio = Math.min(420, Math.max(8, rIni*dIni/d)); posicionar(); }
+}, {passive:true});
+cv.addEventListener("touchend", function(){ dIni = 0; }, {passive:true});
+
+function clicar(e){
+  var r = cv.getBoundingClientRect();
+  mouse.x = ((e.clientX-r.left)/r.width)*2-1;
+  mouse.y = -((e.clientY-r.top)/r.height)*2+1;
+  cam.updateMatrixWorld(); raiz.updateMatrixWorld(true);
+  raycaster.setFromCamera(mouse, cam);
+  // Linhas (malha de terra, cabos finos) têm tolerância de acerto generosa;
+  // sólidos visíveis têm prioridade para o clique não "puxar" o subsolo.
+  raycaster.params.Line.threshold = 0.25;
+  var hits = raycaster.intersectObjects(raiz.children, true);
+  var linha = null;
+  for(var i=0;i<hits.length;i++){
+    var alvoHit = hits[i].object, o = alvoHit;
+    while(o && !o.userData.meta) o = o.parent;
+    if(!o || !o.visible || o.userData.fantasma) continue;
+    if(alvoHit.isMesh){ selecionar(o); return; }
+    if(!linha) linha = o;
+  }
+  selecionar(linha || null);
+}
+
+function enquadrar(vista){
+  var T = P.profBay, L = (P.bays+P.trafos+1)*P.passoBay;
+  var v = {
+    iso:     {raio:Math.max(L,T)*1.5, theta:0.8,  phi:1.02, alvo:new THREE.Vector3(0,5,0)},
+    planta:  {raio:Math.max(L,T)*1.4, theta:0.0,  phi:0.07, alvo:new THREE.Vector3(0,0,0)},
+    frente:  {raio:Math.max(L,T)*1.3, theta:0.0,  phi:1.50, alvo:new THREE.Vector3(0,P.hPortico/2,0)},
+    lateral: {raio:T*1.5,             theta:1.571,phi:1.50, alvo:new THREE.Vector3(0,P.hPortico/2,0)},
+    bay:     {raio:44, theta:1.15, phi:1.22, alvo:new THREE.Vector3(-L/2+P.passoBay*0.9, 5, 0)},
+    trafo:   {raio:36, theta:2.3,  phi:1.20, alvo:new THREE.Vector3(-L/2+(P.bays+0.9)*P.passoBay, 4, P.profBay/2-8+9)}
+  }[vista];
+  if(!v) return;
+  orb.raio = v.raio; orb.theta = v.theta; orb.phi = v.phi; alvo.copy(v.alvo);
+  posicionar();
+}
+
+/* =====================================================================
+   12. INTERFACE
+   ===================================================================== */
+function avisar(txt){
+  var a = document.getElementById("aviso");
+  a.textContent = txt; a.classList.add("on");
+  clearTimeout(a._t); a._t = setTimeout(function(){ a.classList.remove("on"); }, 2600);
+}
+function fmt(v,u,d){ return v.toFixed(d===undefined?2:d).replace(".",",")+" "+u; }
+
+var sliders = [
+  ["r-bays","bays","v-bays",function(v){return String(v);}],
+  ["r-trafos","trafos","v-trafos",function(v){return String(v);}],
+  ["r-fase","vaoFase","v-fase",function(v){return fmt(v,"m");}],
+  ["r-barra","hBarra","v-barra",function(v){return fmt(v,"m");}],
+  ["r-portico","hPortico","v-portico",function(v){return fmt(v,"m");}],
+  ["r-suporte","hSuporte","v-suporte",function(v){return fmt(v,"m");}],
+  ["r-passo","passoBay","v-passo",function(v){return fmt(v,"m",1);}],
+  ["r-prof","profBay","v-prof",function(v){return fmt(v,"m",0);}],
+  ["r-sap","ladoSap","v-sap",function(v){return fmt(v,"m");}],
+  ["r-sap-h","hSap","v-sap-h",function(v){return fmt(v,"m");}],
+  ["r-malha","moduloMalha","v-malha",function(v){return fmt(v,"m",1);}],
+  ["r-cap","capacitores","v-cap",function(v){return String(v);}]
+];
+var selects = [["s-tensao","tensao"],["s-arranjo","arranjo"],["s-fund","fund"],["s-fck","fck"]];
+var checks = [["c-canaleta","canaleta"],["c-bacia","bacia"],["c-casa","casa"],["c-cerca","cerca"],
+  ["c-eletroduto","eletroduto"],["c-malha","malha"],["c-spda","spda"],["c-iluminacao","iluminacao"],
+  ["c-incendio","incendio"],["c-aux","aux"],["c-sinal","sinal"],
+  ["c-reator","reator"],["c-cubiculos","cubiculos"],["c-sfa","sfa"],["c-carrier","carrier"],
+  ["c-aterRapido","aterRapido"],["c-torreLT","torreLT"],["c-telecom","telecom"],["c-cftv","cftv"],
+  ["c-guarita","guarita"],["c-reservatorio","reservatorio"],["c-separadora","separadora"],
+  ["c-cotas","cotas"],["c-eixos","eixos"],["c-tags","tags"],["c-sombra","sombra"],["c-terreno","terreno"]];
+
+var pendente = null;
+
+// Monta o modelo reportando qualquer falha na tela, em vez de deixar o
+// carregamento preso indefinidamente.
+function montar(){
+  var tela = document.getElementById("carregando");
+  try{
+    construir();
+    tela.style.display = "none";
+  }catch(err){
+    tela.style.display = "flex";
+    tela.style.flexDirection = "column";
+    tela.style.padding = "24px";
+    tela.style.textAlign = "center";
+    tela.innerHTML = "<b style='color:var(--g-vermelho);font-size:13px'>Falha ao montar o modelo</b>" +
+      "<span style='margin-top:8px;max-width:420px;line-height:1.5'>" +
+      String(err && err.message ? err.message : err) + "</span>" +
+      "<span style='margin-top:8px;color:var(--txt-3);font-size:11px'>" +
+      "Ajuste um parâmetro no painel para tentar novamente.</span>";
+    console.error(err);
+  }
+}
+function reconstruir(){
+  clearTimeout(pendente);
+  pendente = setTimeout(function(){ isolado = null; montar(); }, 60);
+}
+
+function pintarCampos(){
+  sliders.forEach(function(s){
+    document.getElementById(s[0]).value = P[s[1]];
+    document.getElementById(s[2]).textContent = s[3](P[s[1]]);
+  });
+  selects.forEach(function(s){ document.getElementById(s[0]).value = P[s[1]]; });
+  checks.forEach(function(c){ document.getElementById(c[0]).checked = P[c[1]]; });
+}
+sliders.forEach(function(s){
+  document.getElementById(s[0]).addEventListener("input", function(e){
+    P[s[1]] = parseFloat(e.target.value);
+    document.getElementById(s[2]).textContent = s[3](P[s[1]]);
+    reconstruir();
+  });
+});
+selects.forEach(function(s){
+  document.getElementById(s[0]).addEventListener("change", function(e){
+    P[s[1]] = e.target.value; reconstruir();
+  });
+});
+checks.forEach(function(c){
+  document.getElementById(c[0]).addEventListener("change", function(e){
+    P[c[1]] = e.target.checked; reconstruir();
+  });
+});
+document.getElementById("b-reset").addEventListener("click", function(){
+  P = Object.assign({}, PADRAO); ocultos = {}; pintarCampos(); reconstruir();
+  avisar("Parâmetros restaurados.");
+});
+
+// abas
+["param","vista","lm","norma"].forEach(function(t){
+  document.getElementById("t-"+t).addEventListener("click", function(){
+    ["param","vista","lm","norma"].forEach(function(o){
+      document.getElementById("t-"+o).setAttribute("aria-selected", String(o===t));
+      document.getElementById("p-"+o).hidden = (o!==t);
+    });
+  });
+});
+// modos
+document.querySelectorAll("#seg-modo button").forEach(function(b){
+  b.addEventListener("click", function(){
+    modo = b.dataset.modo;
+    document.querySelectorAll("#seg-modo button").forEach(function(o){
+      o.setAttribute("aria-pressed", String(o===b)); });
+    aplicarModo(); aplicarCorte();
+  });
+});
+document.querySelectorAll("#seg-cam button").forEach(function(b){
+  b.addEventListener("click", function(){ enquadrar(b.dataset.cam); });
+});
+document.getElementById("c-perspectiva").addEventListener("change", function(e){
+  cam = e.target.checked ? camP : camO;
+  redimensionar(); posicionar();
+});
+// corte e explosão
+document.getElementById("r-corte").addEventListener("input", function(e){
+  corte = +e.target.value; aplicarCorte();
+});
+document.getElementById("r-explode").addEventListener("input", function(e){
+  explode = +e.target.value;
+  document.getElementById("v-explode").textContent = explode+" %";
+  aplicarExplosao();
+});
+// escopo da LM
+document.querySelectorAll("#seg-lm button").forEach(function(b){
+  b.addEventListener("click", function(){
+    escopoLM = b.dataset.lm;
+    document.querySelectorAll("#seg-lm button").forEach(function(o){
+      o.setAttribute("aria-pressed", String(o===b)); });
+    atualizarLM();
+  });
+});
+document.getElementById("b-csv").addEventListener("click", function(){
+  var sufixo = {TODOS:"CONSOLIDADA", CIVIL:"CIVIL", ELETROMECANICA:"ELETROMECANICA", SELECAO:"SELECAO"}[escopoLM];
+  baixar("LM_SE_"+P.tensao+"kV_"+sufixo+".csv", csvLM(escopoLM), "text/csv;charset=utf-8");
+});
+document.getElementById("b-json").addEventListener("click", function(){
+  var pacote = {projeto:{tensao:P.tensao+" kV", arranjo:P.arranjo, bays:P.bays,
+    transformadores:P.trafos, emissao:new Date().toISOString(), escopo:escopoLM},
+    parametros:P, materiais:coletar(escopoLM)};
+  baixar("LM_SE_"+P.tensao+"kV_"+escopoLM+".json", JSON.stringify(pacote,null,2), "application/json");
+});
+document.getElementById("b-copiar").addEventListener("click", function(){
+  var txt = coletar(escopoLM).map(function(r,i){
+    return [i+1, r.disciplina, r.sistema, r.nome, r.especificacao,
+      num(r.qtd, r.un==="un"?0:2), r.un].join("\t"); }).join("\n");
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){ avisar("Tabela copiada para a área de transferência."); },
+      function(){ avisar("Não foi possível copiar neste navegador."); });
+  } else avisar("Não foi possível copiar neste navegador.");
+});
+// ---------- ferramentas de visualização ----------
+function acao(nome){
+  if(nome === "esmaecer"){
+    modoIsolar = modoIsolar === "fantasma" ? "ocultar" : "fantasma";
+    document.querySelector("[data-acao='esmaecer']")
+      .setAttribute("aria-pressed", String(modoIsolar === "fantasma"));
+    aplicarVisibilidade();
+    avisar(modoIsolar === "fantasma"
+      ? "Ao isolar, os demais ficam translúcidos."
+      : "Ao isolar, os demais ficam ocultos.");
+    return;
+  }
+  if(nome === "restaurar"){
+    isolado = null; ocultos = {};
+    OBJS.forEach(function(o){ delete o.userData.escondido; });
+    atualizarArvore(); aplicarVisibilidade(); avisar("Modelo restaurado.");
+    return;
+  }
+  if(!selecionado){ avisar("Selecione um elemento no modelo."); return; }
+  if(nome === "focar"){ focar(selecionado); avisar("Câmera aproximada do elemento."); }
+  if(nome === "isolar"){
+    isolado = (isolado === selecionado) ? null : selecionado;
+    aplicarVisibilidade();
+    avisar(isolado ? "Elemento isolado — demais "+
+      (modoIsolar==="fantasma"?"translúcidos":"ocultos")+"." : "Isolamento desfeito.");
+  }
+  if(nome === "ocultar"){
+    selecionado.userData.escondido = true;
+    if(isolado === selecionado) isolado = null;
+    aplicarVisibilidade(); avisar("Elemento ocultado."); selecionar(null);
+  }
+}
+document.querySelectorAll(".ferramentas button").forEach(function(b){
+  b.addEventListener("click", function(){ acao(b.dataset.acao); });
+});
+document.getElementById("pr-fechar").addEventListener("click", function(){ selecionar(null); });
+document.getElementById("pr-focar").addEventListener("click", function(){ acao("focar"); });
+document.getElementById("pr-isolar").addEventListener("click", function(){ acao("isolar"); });
+document.getElementById("pr-ocultar").addEventListener("click", function(){ acao("ocultar"); });
+document.getElementById("pr-restaurar").addEventListener("click", function(){ acao("restaurar"); });
+document.getElementById("b-tudo").addEventListener("click", function(){ acao("restaurar"); });
+
+// ---------- busca por TAG, nome ou sistema ----------
+var campoQ = document.getElementById("q"), caixaQ = document.getElementById("q-res");
+campoQ.addEventListener("input", function(){
+  var q = campoQ.value.trim().toLowerCase();
+  if(q.length < 2){ caixaQ.hidden = true; caixaQ.innerHTML = ""; return; }
+  var achados = OBJS.filter(function(o){
+    var m = o.userData.meta;
+    return (m.tag+" "+m.nome+" "+m.sistema+" "+m.categoria+" "+m.id).toLowerCase().indexOf(q) >= 0;
+  }).slice(0, 40);
+  caixaQ.innerHTML = "";
+  if(!achados.length){
+    caixaQ.innerHTML = "<div class='vazio'>Nenhum elemento encontrado.</div>";
+  } else {
+    achados.forEach(function(o){
+      var m = o.userData.meta, b = document.createElement("button");
+      b.innerHTML = m.tag + "<span>" + m.nome + " · " + m.sistema + "</span>";
+      b.addEventListener("click", function(){
+        selecionar(o); focar(o); caixaQ.hidden = true; campoQ.value = "";
+        document.getElementById("lateral").classList.remove("on");
+      });
+      caixaQ.appendChild(b);
+    });
+  }
+  caixaQ.hidden = false;
+});
+campoQ.addEventListener("blur", function(){ setTimeout(function(){ caixaQ.hidden = true; }, 180); });
+document.getElementById("abrirMenu").addEventListener("click", function(e){
+  var on = document.getElementById("lateral").classList.toggle("on");
+  e.target.setAttribute("aria-expanded", String(on));
+});
+addEventListener("keydown", function(e){
+  if(e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  var k = e.key.toLowerCase();
+  if(e.key === "Escape"){ selecionar(null); return; }
+  if(k === "f") acao("focar");
+  if(k === "i") acao("isolar");
+  if(k === "d") acao("esmaecer");
+  if(k === "h") acao("ocultar");
+  if(k === "r") acao("restaurar");
+});
+
+/* =====================================================================
+   13. LOOP
+   ===================================================================== */
+function redimensionar(){
+  var w = palco.clientWidth || window.innerWidth || 1280;
+  var h = palco.clientHeight || window.innerHeight || 720;
+  camP.aspect = w/h; camP.updateProjectionMatrix();
+  rend.setPixelRatio(Math.min(devicePixelRatio, 2));
+  rend.setSize(w, h);
+  posicionar();
+}
+addEventListener("resize", redimensionar);
+
+pintarCampos();
+montar();
+redimensionar();
+enquadrar("iso");
+(function loop(){ requestAnimationFrame(loop); rend.render(cena, cam); })();
+
+})();
+</script>
+</body>
+</html>
